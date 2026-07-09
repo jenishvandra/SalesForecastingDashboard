@@ -34,12 +34,10 @@ st.markdown("""
     background: #f0f2f5 !important;
 }
 
-/* Hide default elements */
 #MainMenu, footer, header {
     visibility: hidden;
 }
 
-/* ── SIDEBAR ── */
 [data-testid="stSidebar"] {
     background: #ffffff !important;
     border-right: 1px solid #e5e7eb !important;
@@ -72,7 +70,6 @@ st.markdown("""
     margin: 2px 0 0 0;
 }
 
-/* ── Navigation ── */
 [data-testid="stSidebar"] .stRadio > div {
     display: flex !important;
     flex-direction: column !important;
@@ -115,7 +112,6 @@ st.markdown("""
     display: none !important;
 }
 
-/* ── Sidebar Stats ── */
 .sidebar-stats {
     padding: 0 16px;
     margin-top: 8px;
@@ -151,7 +147,6 @@ st.markdown("""
     color: #10b981;
 }
 
-/* ── Page Header ── */
 .page-header {
     margin-bottom: 24px;
 }
@@ -176,19 +171,13 @@ st.markdown("""
     margin: 0;
 }
 
-/* ── KPI Cards ── */
-.kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 16px;
-    margin-bottom: 24px;
-}
 .kpi-card {
     background: #ffffff;
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     padding: 16px 20px;
     transition: all 0.2s;
+    height: 100%;
 }
 .kpi-card:hover {
     border-color: #4a6cf7;
@@ -222,7 +211,6 @@ st.markdown("""
     color: #4a6cf7;
 }
 
-/* ── Section Headers ── */
 .section-header {
     display: flex;
     align-items: center;
@@ -251,7 +239,6 @@ st.markdown("""
     letter-spacing: 0.5px;
 }
 
-/* ── Quick Stats Footer ── */
 .quick-stats {
     background: #ffffff;
     padding: 12px 20px;
@@ -278,7 +265,6 @@ st.markdown("""
     margin-left: 6px;
 }
 
-/* ── Metric Boxes ── */
 .metric-box {
     background: #ffffff;
     padding: 14px 18px;
@@ -303,7 +289,6 @@ st.markdown("""
     color: #10b981;
 }
 
-/* ── Cluster Cards ── */
 .cluster-card {
     background: #ffffff;
     border: 1px solid #e5e7eb;
@@ -334,7 +319,6 @@ st.markdown("""
     font-weight: 500;
 }
 
-/* ── Select Inputs ── */
 .stSelectbox > div > div {
     background: #ffffff !important;
     border: 1px solid #e5e7eb !important;
@@ -366,7 +350,6 @@ st.markdown("""
     color: #4a4a6a !important;
 }
 
-/* ── Tables ── */
 [data-testid="stDataFrame"] {
     background: #ffffff !important;
     border: 1px solid #e5e7eb !important;
@@ -822,4 +805,17 @@ elif page == "🚨 Anomaly Report":
     <div class='page-header'>
         <div class='tag'>Detection Engine</div>
         <h1>Anomaly Report</h1>
-        <p>Isolation Forest + Z-S
+        <p>Isolation Forest + Z-Score applied to 200+ weeks of sales data.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    ws = weekly.set_index('Date')['Sales']
+    iso = IsolationForest(contamination=0.07, random_state=42)
+    iso_lbl = iso.fit_predict(ws.values.reshape(-1, 1))
+    iso_an = ws[iso_lbl == -1]
+
+    rm = ws.rolling(8, center=True).mean()
+    rs = ws.rolling(8, center=True).std()
+    z = (ws - rm) / rs
+    z_an = ws[z.abs() > 2]
+    both = len(set(iso_an.index.date) & set(z_
