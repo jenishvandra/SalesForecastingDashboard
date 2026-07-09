@@ -1,10 +1,11 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import matplotlib.ticker as mticker
 import warnings
 warnings.filterwarnings('ignore')
-
-import plotly.graph_objects as go
 
 from prophet import Prophet
 from sklearn.ensemble import IsolationForest
@@ -13,726 +14,595 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
 st.set_page_config(
-    page_title="SalesIQ — Analytics Platform",
-    page_icon="📈",
+    page_title="SalesIQ — Intelligence Dashboard",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ══════════════════════════════════════════════════════════════════════════
-# COLOR PALETTE (matches reference design)
-# ══════════════════════════════════════════════════════════════════════════
-BG        = "#0d1117"
-PANEL     = "#12161c"
-PANEL2    = "#161b22"
-BORDER    = "#262c36"
-BORDER_LT = "#1d222a"
-TEXT      = "#e6edf3"
-TEXT_DIM  = "#8b949e"
-BLUE      = "#3b82f6"
-PURPLE    = "#7c5cff"
-GREEN     = "#22c55e"
-RED       = "#ef4444"
-ORANGE    = "#f59e0b"
-CYAN      = "#38bdf8"
-
-GRID      = "#1d222a"
-
-# ══════════════════════════════════════════════════════════════════════════
-# GLOBAL CSS — recreates the SalesIQ SaaS dashboard look
-# ══════════════════════════════════════════════════════════════════════════
-st.markdown(f"""
+st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+* { font-family: 'Inter', sans-serif !important; box-sizing: border-box; }
+.stApp { background: #0d1117; color: #e6edf3; }
+#MainMenu, footer, header { visibility: hidden; }
 
-* {{ font-family: 'Inter', sans-serif !important; box-sizing: border-box; }}
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {
+    background: #161b22 !important;
+    border-right: 1px solid #30363d !important;
+}
+[data-testid="stSidebar"] * { color: #c9d1d9 !important; }
 
-.stApp {{ background: {BG}; color: {TEXT}; }}
-#MainMenu, footer, header {{ visibility: hidden; }}
-.block-container {{ padding-top: 1.6rem !important; padding-bottom: 2rem !important; max-width: 1500px; }}
-
-::-webkit-scrollbar {{ width: 6px; height:6px; }}
-::-webkit-scrollbar-track {{ background: {BG}; }}
-::-webkit-scrollbar-thumb {{ background: {BORDER}; border-radius: 3px; }}
-
-/* Sidebar */
-[data-testid="stSidebar"] {{
-    background: {PANEL2} !important;
-    border-right: 1px solid {BORDER} !important;
-}}
-[data-testid="stSidebar"] > div:first-child {{ padding-top: 0 !important; }}
-[data-testid="stSidebar"] * {{ color: {TEXT_DIM} !important; }}
-
-.brand-wrap {{
-    display:flex; align-items:center; gap:10px;
-    padding: 18px 18px 16px 18px;
-    border-bottom: 1px solid {BORDER};
-    margin-bottom: 6px;
-}}
-.brand-icon {{
-    width:34px; height:34px; border-radius:9px;
-    background: linear-gradient(135deg, {PURPLE}, {BLUE});
-    display:flex; align-items:center; justify-content:center;
-    font-size:16px; flex-shrink:0;
-}}
-.brand-name {{ font-size:16px; font-weight:800; color:{TEXT} !important; letter-spacing:-0.3px; line-height:1.1; }}
-.brand-sub {{ font-size:10.5px; color:{TEXT_DIM} !important; margin-top:1px; letter-spacing:0.3px; }}
-
-.nav-label {{
-    font-size:10px; font-weight:700; color:{TEXT_DIM} !important;
-    text-transform:uppercase; letter-spacing:1.2px;
-    padding: 10px 18px 6px 18px; display:block;
-}}
-
-section[data-testid="stSidebar"] .stRadio > div {{ gap: 2px !important; padding: 0 10px; }}
-section[data-testid="stSidebar"] .stRadio > div > label {{
+/* ── Radio buttons as nav items ── */
+[data-testid="stSidebar"] .stRadio > div {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+}
+[data-testid="stSidebar"] .stRadio > div > label {
     background: transparent !important;
-    border: 1px solid transparent !important;
+    border: none !important;
     border-radius: 8px !important;
-    padding: 9px 12px !important;
-    font-size: 13.5px !important;
-    font-weight: 500;
-    color: {TEXT_DIM} !important;
-    width: 100%;
-    transition: all .15s;
-}}
-section[data-testid="stSidebar"] .stRadio > div > label:hover {{
-    background: {BORDER_LT} !important;
-    color: {TEXT} !important;
-}}
-section[data-testid="stSidebar"] .stRadio input:checked + div {{
-    color: {BLUE} !important;
-    font-weight: 600 !important;
-}}
-section[data-testid="stSidebar"] .stRadio [data-baseweb="radio"] > div:first-child {{ display:none; }}
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #8b949e !important;
+    cursor: pointer !important;
+    transition: all 0.15s !important;
+    display: flex !important;
+    align-items: center !important;
+}
+[data-testid="stSidebar"] .stRadio > div > label:hover {
+    background: #21262d !important;
+    color: #e6edf3 !important;
+}
+[data-testid="stSidebar"] .stRadio > div > label[data-baseweb="radio"] { display: flex; }
+[data-testid="stSidebar"] .stRadio [aria-checked="true"] + div,
+[data-testid="stSidebar"] .stRadio > div > label:has(input:checked) {
+    background: #21262d !important;
+    color: #7091E6 !important;
+    border-left: 3px solid #7091E6 !important;
+}
 
-.quick-stats {{ padding: 6px 18px 0 18px; }}
-.qs-row {{
-    display:flex; justify-content:space-between; padding:7px 0;
-    border-bottom: 1px solid {BORDER_LT};
-}}
-.qs-row:last-of-type {{ border-bottom:none; }}
-.qs-label {{ font-size:12px; color:{TEXT_DIM}; }}
-.qs-val {{ font-size:12px; color:{TEXT}; font-weight:700; font-family:'JetBrains Mono',monospace; }}
-.qs-val.green {{ color:{GREEN}; }}
+/* Hide radio circle */
+[data-testid="stSidebar"] .stRadio input[type="radio"] { display: none !important; }
+[data-testid="stSidebar"] .stRadio [data-testid="stMarkdownContainer"] { display: none !important; }
 
-.live-badge {{
-    margin: 14px 14px 10px 14px;
-    background: {GREEN}14;
-    border: 1px solid {GREEN}40;
-    border-radius: 8px;
-    padding: 8px 10px;
-    font-size: 11px;
-    color: {GREEN} !important;
-    font-weight: 600;
-    display:flex; align-items:center; gap:7px;
-}}
-.live-dot {{
-    width:7px; height:7px; border-radius:50%; background:{GREEN};
-    box-shadow: 0 0 0 0 {GREEN}80;
-    animation: pulse 1.8s infinite;
-}}
-@keyframes pulse {{
-    0% {{ box-shadow: 0 0 0 0 {GREEN}66; }}
-    70% {{ box-shadow: 0 0 0 6px {GREEN}00; }}
-    100% {{ box-shadow: 0 0 0 0 {GREEN}00; }}
-}}
+/* ── Inputs ── */
+.stSelectbox > div > div {
+    background: #21262d !important;
+    border: 1px solid #30363d !important;
+    border-radius: 8px !important;
+    color: #e6edf3 !important;
+    font-size: 13px !important;
+}
+.stMultiSelect > div > div {
+    background: #21262d !important;
+    border: 1px solid #30363d !important;
+    border-radius: 8px !important;
+}
+.stSlider > div > div > div { background: #7091E6 !important; }
+.stSlider label { color: #8b949e !important; font-size: 12px !important; }
+.stRadio > div { gap: 4px !important; }
+.stRadio > div > label {
+    background: #21262d !important;
+    border: 1px solid #30363d !important;
+    border-radius: 8px !important;
+    padding: 8px 14px !important;
+    font-size: 12px !important;
+    color: #8b949e !important;
+}
 
-/* Page header */
-h1.page-title {{ color:{TEXT} !important; font-weight:800 !important; font-size:1.85rem !important; letter-spacing:-0.6px; margin:0 0 4px 0 !important; }}
-p.page-sub {{ color:{TEXT_DIM} !important; font-size:13.5px !important; margin:0 0 22px 0 !important; }}
+/* ── Text ── */
+h1 { color: #e6edf3 !important; font-weight: 800 !important; font-size: 1.7rem !important; letter-spacing: -0.5px; }
+h2 { color: #c9d1d9 !important; font-weight: 600 !important; font-size: 1rem !important; margin-top: 24px !important; }
+p  { color: #8b949e !important; font-size: 13px !important; }
+hr { border-color: #21262d !important; margin: 14px 0 !important; }
 
-/* KPI stat cards */
-.stat-card {{
-    background: {PANEL2};
-    border: 1px solid {BORDER};
+/* ── Cards ── */
+.stat-card {
+    background: #161b22;
+    border: 1px solid #30363d;
     border-radius: 12px;
     padding: 18px 20px;
-    position: relative;
-    transition: border-color .18s, transform .18s;
+    transition: border-color 0.2s, transform 0.15s;
     height: 100%;
-}}
-.stat-card:hover {{ border-color: #3b4250; transform: translateY(-2px); }}
-.stat-icon {{
-    position:absolute; top:16px; right:16px;
-    width:28px; height:28px; border-radius:8px;
-    display:flex; align-items:center; justify-content:center;
-    font-size:13px;
-}}
-.stat-label {{ font-size:10.5px; color:{TEXT_DIM}; text-transform:uppercase; letter-spacing:0.9px; font-weight:600; }}
-.stat-value {{ font-size:25px; font-weight:800; color:{TEXT}; margin:8px 0 5px 0; letter-spacing:-0.8px; font-family:'JetBrains Mono',monospace;}}
-.stat-sub {{ font-size:11.5px; font-weight:600; }}
-.stat-up {{ color:{GREEN}; }}
-.stat-down {{ color:{RED}; }}
-.stat-neutral {{ color:{TEXT_DIM}; }}
+}
+.stat-card:hover { border-color: #7091E6; transform: translateY(-2px); }
+.stat-label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 500; margin-bottom: 8px; }
+.stat-value { font-size: 26px; font-weight: 800; color: #e6edf3; letter-spacing: -1px; margin-bottom: 4px; }
+.stat-sub   { font-size: 12px; color: #7091E6; font-weight: 500; }
+.stat-up    { color: #3fb950 !important; }
+.stat-down  { color: #f85149 !important; }
 
-/* Panels */
-.panel {{
-    background: {PANEL2};
-    border: 1px solid {BORDER};
-    border-radius: 12px;
-    padding: 20px 22px;
-    margin-bottom: 20px;
-}}
-.panel-title {{ font-size:14.5px; font-weight:700; color:{TEXT}; margin-bottom:2px; }}
-.panel-sub {{ font-size:11.5px; color:{TEXT_DIM}; margin-bottom:14px; font-family:'JetBrains Mono',monospace; }}
+.section-hdr {
+    display: flex; align-items: center; gap: 10px;
+    margin: 24px 0 14px 0; padding-bottom: 10px;
+    border-bottom: 1px solid #21262d;
+}
+.sec-icon  { font-size: 15px; }
+.sec-title { font-size: 13px; font-weight: 600; color: #c9d1d9; }
+.sec-badge {
+    font-size: 10px; font-weight: 600; padding: 2px 8px;
+    border-radius: 20px; background: #3D52A020; color: #7091E6;
+    border: 1px solid #3D52A050; text-transform: uppercase; letter-spacing: 0.5px;
+}
 
-/* Pill toggle buttons (segmented control) */
-div[data-testid="column"] .stButton > button {{
-    background: {BORDER_LT} !important;
-    border: 1px solid {BORDER} !important;
-    color: {TEXT_DIM} !important;
-    border-radius: 7px !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    padding: 6px 14px !important;
-    width: 100%;
-    transition: all .15s;
-}}
-div[data-testid="column"] .stButton > button:hover {{
-    border-color: {BLUE} !important; color:{TEXT} !important;
-}}
-.stButton > button:focus {{ box-shadow:none !important; }}
+.cluster-card {
+    background: #161b22; border: 1px solid #30363d;
+    border-left: 3px solid; border-radius: 10px;
+    padding: 14px 16px; margin: 6px 0; transition: background 0.2s;
+}
+.cluster-card:hover { background: #21262d; }
+.c-name  { font-size: 13px; font-weight: 600; color: #e6edf3; margin-bottom: 4px; }
+.c-items { font-size: 11px; color: #8b949e; margin-bottom: 5px; line-height: 1.5; }
+.c-strat { font-size: 11px; color: #7091E6; font-weight: 500; }
 
-.stSelectbox > div > div, .stMultiSelect > div > div {{
-    background: {BORDER_LT} !important;
-    border: 1px solid {BORDER} !important;
-    border-radius: 8px !important;
-    color: {TEXT} !important;
-}}
-.stSlider > div > div > div {{ background: {BLUE} !important; }}
-.stSlider label, .stSelectbox label {{ color:{TEXT_DIM} !important; font-size:11px !important; text-transform:uppercase; letter-spacing:0.8px; font-weight:600;}}
+.sidebar-stats { padding: 0 4px; }
+.ss-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 0; border-bottom: 1px solid #21262d;
+}
+.ss-label { font-size: 11px; color: #8b949e; }
+.ss-value { font-size: 12px; color: #e6edf3; font-weight: 600; }
+.ss-green { color: #3fb950 !important; }
 
-div.main .stRadio > div {{ gap: 8px !important; }}
-div.main .stRadio > div > label {{
-    background: {BORDER_LT};
-    border: 1px solid {BORDER};
-    border-radius: 7px;
-    padding: 7px 16px !important;
-    font-size: 12px !important;
-    color: {TEXT_DIM} !important;
-    cursor: pointer;
-    transition: all 0.15s;
-}}
-div.main .stRadio > div > label:hover {{ border-color:{ORANGE}; color:{TEXT} !important; }}
-
-/* Tables */
-.stDataFrame {{ border-radius: 10px; overflow: hidden; border: 1px solid {BORDER} !important; }}
-[data-testid="stDataFrame"] * {{ color: {TEXT} !important; font-size: 12.5px !important; }}
-[data-testid="stDataFrame"] th {{ background: {BORDER_LT} !important; color: {TEXT_DIM} !important; text-transform:uppercase; font-size:10.5px !important; letter-spacing:0.6px;}}
-[data-testid="stDataFrame"] tr:hover td {{ background: {BORDER_LT} !important; }}
-
-/* Cluster / segment cards */
-.cluster-card {{
-    background: {PANEL2};
-    border: 1px solid {BORDER};
-    border-left: 3px solid;
-    border-radius: 10px;
-    padding: 16px 18px;
-    margin-bottom: 14px;
-}}
-.cluster-head {{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }}
-.cluster-dot {{ width:9px; height:9px; border-radius:50%; }}
-.cluster-name {{ font-size:14.5px; font-weight:700; color:{TEXT}; }}
-.cluster-items {{ font-size:12px; color:{TEXT_DIM}; margin-bottom:12px; line-height:1.6; }}
-.cluster-strategy {{ font-size:12px; font-weight:600; padding:8px 12px; border-radius:8px; }}
-
-/* Badges */
-.badge {{ display:inline-block; padding:3px 11px; border-radius:12px; font-size:11px; font-weight:700; }}
-.badge-up {{ background:{GREEN}1f; color:{GREEN}; }}
-.badge-down {{ background:{RED}1f; color:{RED}; }}
-
-hr {{ border-color:{BORDER_LT} !important; margin: 10px 0 !important; }}
+.page-tag {
+    font-size: 10px; color: #8b949e; text-transform: uppercase;
+    letter-spacing: 1.2px; font-weight: 500; margin-bottom: 2px;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# ══════════════════════════════════════════════════════════════════════════
-# DATA
-# ══════════════════════════════════════════════════════════════════════════
+# ── Data ──────────────────────────────────────────────────────────────────
 @st.cache_data
 def load_data():
     df = pd.read_csv('train.csv')
     df['Order Date'] = pd.to_datetime(df['Order Date'], dayfirst=True)
-    df['Ship Date'] = pd.to_datetime(df['Ship Date'], dayfirst=True)
-    df['Year'] = df['Order Date'].dt.year
-    df['Month'] = df['Order Date'].dt.month
-    df['Quarter'] = df['Order Date'].dt.quarter
-    df['Ship_Days'] = (df['Ship Date'] - df['Order Date']).dt.days
+    df['Ship Date']  = pd.to_datetime(df['Ship Date'],  dayfirst=True)
+    df['Year']       = df['Order Date'].dt.year
+    df['Month']      = df['Order Date'].dt.month
+    df['Quarter']    = df['Order Date'].dt.quarter
+    df['Ship_Days']  = (df['Ship Date'] - df['Order Date']).dt.days
     return df
 
 df = load_data()
 monthly = df.groupby(pd.Grouper(key='Order Date', freq='ME'))['Sales'].sum().reset_index()
-monthly.columns = ['Date', 'Sales']
-weekly = df.groupby(pd.Grouper(key='Order Date', freq='W'))['Sales'].sum().reset_index()
-weekly.columns = ['Date', 'Sales']
+monthly.columns = ['Date','Sales']
+weekly  = df.groupby(pd.Grouper(key='Order Date', freq='W'))['Sales'].sum().reset_index()
+weekly.columns  = ['Date','Sales']
 
-# ══════════════════════════════════════════════════════════════════════════
-# PLOTLY HELPERS
-# ══════════════════════════════════════════════════════════════════════════
-def base_layout(height=380, legend=True):
-    return dict(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color=TEXT_DIM, family='Inter', size=11),
-        margin=dict(l=10, r=10, t=10, b=10),
-        height=height,
-        hovermode='x unified',
-        showlegend=legend,
-        legend=dict(orientation='h', yanchor='bottom', y=-0.28, xanchor='left', x=0,
-                    font=dict(size=11, color=TEXT_DIM), bgcolor='rgba(0,0,0,0)'),
-        xaxis=dict(showgrid=False, zeroline=False, color=TEXT_DIM, tickfont=dict(size=10.5)),
-        yaxis=dict(showgrid=True, gridcolor=GRID, zeroline=False, color=TEXT_DIM, tickfont=dict(size=10.5)),
-    )
+# ── Chart helpers ─────────────────────────────────────────────────────────
+BG   = '#0d1117'
+PNL  = '#161b22'
+GRD  = '#21262d'
+TK   = '#8b949e'
+C1,C2,C3,C4,C5 = '#3D52A0','#7091E6','#8697C4','#ADBBDA','#EDE8F5'
+UP,DN = '#3fb950','#f85149'
 
-# ══════════════════════════════════════════════════════════════════════════
-# SIDEBAR
-# ══════════════════════════════════════════════════════════════════════════
+def mfig(w=10, h=4, ncols=1, nrows=1):
+    fig, axes = plt.subplots(nrows, ncols, figsize=(w, h))
+    fig.patch.set_facecolor(BG)
+    alist = list(axes.flat) if hasattr(axes,'flat') else [axes]
+    for ax in alist:
+        ax.set_facecolor(PNL)
+        ax.tick_params(colors=TK, labelsize=8, length=0, pad=4)
+        ax.xaxis.label.set_color(TK)
+        ax.yaxis.label.set_color(TK)
+        ax.title.set_color(C5)
+        for s in ax.spines.values(): s.set_edgecolor(GRD)
+        ax.grid(axis='y', color=GRD, linewidth=0.6, linestyle='--', alpha=0.7)
+        ax.set_axisbelow(True)
+    return fig, axes
+
+def finish(fig, tight=True):
+    if tight: fig.tight_layout(pad=1.8)
+    return fig
+
+# ── Sidebar ───────────────────────────────────────────────────────────────
+yearly_rev = df.groupby('Year')['Sales'].sum()
+growth = (yearly_rev.iloc[-1]-yearly_rev.iloc[-2])/yearly_rev.iloc[-2]*100
+
 with st.sidebar:
     st.markdown("""
-    <div class="brand-wrap">
-        <div class="brand-icon">📈</div>
-        <div>
-            <div class="brand-name">SalesIQ</div>
-            <div class="brand-sub">Analytics Platform</div>
+    <div style='padding:20px 16px 16px;border-bottom:1px solid #30363d;margin-bottom:12px;'>
+        <div style='font-size:20px;font-weight:800;color:#e6edf3;letter-spacing:-0.5px;'>
+            Sales<span style='color:#7091E6;'>IQ</span>
         </div>
+        <div style='font-size:11px;color:#8b949e;margin-top:3px;'>Demand Intelligence Platform</div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown('<span class="nav-label">Navigation</span>', unsafe_allow_html=True)
-    page = st.radio("", [
+    st.markdown("<div style='font-size:10px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;padding:0 4px 6px;font-weight:600;'>Menu</div>", unsafe_allow_html=True)
+
+    page = st.radio("nav", [
         "📊  Sales Overview",
-        "📈  Forecasting",
-        "⚠️  Anomaly Report",
-        "🗂️  Demand Segments"
+        "🔮  Forecast Explorer",
+        "🚨  Anomaly Report",
+        "📦  Demand Segments",
     ], label_visibility='collapsed')
 
     st.markdown("<hr/>", unsafe_allow_html=True)
-
-    yearly_rev = df.groupby('Year')['Sales'].sum()
-    growth = (yearly_rev.iloc[-1] - yearly_rev.iloc[-2]) / yearly_rev.iloc[-2] * 100
-    yr_min, yr_max = int(df['Year'].min()), int(df['Year'].max())
-
-    st.markdown('<span class="nav-label">Quick Stats</span>', unsafe_allow_html=True)
     st.markdown(f"""
-    <div class="quick-stats">
-        <div class="qs-row"><span class="qs-label">Revenue</span><span class="qs-val">${df['Sales'].sum()/1e6:.2f}M</span></div>
-        <div class="qs-row"><span class="qs-label">Orders</span><span class="qs-val">{len(df):,}</span></div>
-        <div class="qs-row"><span class="qs-label">YoY Growth</span><span class="qs-val green">+{growth:.1f}%</span></div>
-        <div class="qs-row"><span class="qs-label">Avg Order</span><span class="qs-val">${df['Sales'].mean():,.0f}</span></div>
-        <div class="qs-row"><span class="qs-label">Period</span><span class="qs-val">{yr_min}–{yr_max}</span></div>
+    <div class='sidebar-stats'>
+        <div style='font-size:10px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;font-weight:600;padding-bottom:6px;'>Quick Stats</div>
+        <div class='ss-row'><span class='ss-label'>Revenue</span><span class='ss-value'>${df['Sales'].sum()/1e6:.2f}M</span></div>
+        <div class='ss-row'><span class='ss-label'>Orders</span><span class='ss-value'>{len(df):,}</span></div>
+        <div class='ss-row'><span class='ss-label'>YoY Growth</span><span class='ss-value ss-green'>+{growth:.1f}%</span></div>
+        <div class='ss-row'><span class='ss-label'>Avg Order</span><span class='ss-value'>${df['Sales'].mean():,.0f}</span></div>
+        <div class='ss-row' style='border:none;'><span class='ss-label'>Period</span><span class='ss-value'>2014–2017</span></div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="live-badge"><span class="live-dot"></span> LIVE · Updated just now</div>
-    """, unsafe_allow_html=True)
-
 # ══════════════════════════════════════════════════════════════════════════
-# STAT CARD RENDERER
-# ══════════════════════════════════════════════════════════════════════════
-def stat_card(col, icon, icon_bg, label, value, sub, kind="neutral"):
-    cls = {"up": "stat-up", "down": "stat-down", "neutral": "stat-neutral"}[kind]
-    with col:
-        st.markdown(f"""
-        <div class="stat-card">
-            <div class="stat-icon" style="background:{icon_bg}22;color:{icon_bg};">{icon}</div>
-            <div class="stat-label">{label}</div>
-            <div class="stat-value">{value}</div>
-            <div class="stat-sub {cls}">{sub}</div>
-        </div>""", unsafe_allow_html=True)
-
-# ══════════════════════════════════════════════════════════════════════════
-# PAGE 1 — SALES OVERVIEW
+#  PAGE 1 — OVERVIEW
 # ══════════════════════════════════════════════════════════════════════════
 if page == "📊  Sales Overview":
+    st.markdown("<div class='page-tag'>XYlofy AI · Week 3 & 4</div>", unsafe_allow_html=True)
+    st.title("Sales Overview")
+    st.markdown("<p>Real-time retail performance across categories, regions and time.</p>", unsafe_allow_html=True)
 
-    st.markdown("""
-    <h1 class="page-title">Sales Overview</h1>
-    <p class="page-sub">Full-year performance across all channels and regions</p>
-    """, unsafe_allow_html=True)
+    # KPI
+    total   = df['Sales'].sum()
+    orders  = len(df)
+    avg_ord = df['Sales'].mean()
+    avg_shp = df['Ship_Days'].mean()
 
-    total_sales = df['Sales'].sum()
-    total_orders = len(df)
-    avg_order = df['Sales'].mean()
-    avg_ship = df['Ship_Days'].mean()
-    yearly_sales = df.groupby('Year')['Sales'].sum()
-    yoy_growth = (yearly_sales.iloc[-1] - yearly_sales.iloc[-2]) / yearly_sales.iloc[-2] * 100
-    yr_a, yr_b = yearly_sales.index[-1], yearly_sales.index[-2]
-    orders_a = df[df.Year == yr_a].shape[0]
-    orders_b = df[df.Year == yr_b].shape[0]
-    orders_yoy = (orders_a - orders_b) / orders_b * 100
-    n_cats = df['Category'].nunique()
+    c1,c2,c3,c4,c5 = st.columns(5)
+    for col,lbl,val,sub,up in [
+        (c1,"Total Revenue",   f"${total/1e6:.2f}M",  f"↑ {growth:.1f}% YoY", True),
+        (c2,"Total Orders",    f"{orders:,}",          "4 Years of Data",       False),
+        (c3,"Avg Order Value", f"${avg_ord:,.0f}",     "Per Transaction",       False),
+        (c4,"Avg Ship Time",   f"{avg_shp:.1f}d",      "Order to Delivery",     False),
+        (c5,"Categories",      "3",                    "Furn · Tech · Office",  False),
+    ]:
+        with col:
+            sc = "stat-up" if up else "stat-sub"
+            st.markdown(f"""<div class='stat-card'>
+                <div class='stat-label'>{lbl}</div>
+                <div class='stat-value'>{val}</div>
+                <div class='{sc}'>{sub}</div>
+            </div>""", unsafe_allow_html=True)
 
-    c1, c2, c3, c4, c5 = st.columns(5)
-    stat_card(c1, "$", BLUE, "Total Revenue", f"${total_sales/1e6:.2f}M", f"↗ +{yoy_growth:.1f}% YoY", "up")
-    stat_card(c2, "🛒", GREEN, "Total Orders", f"{total_orders:,}", f"↗ +{orders_yoy:.1f}% YoY", "up")
-    stat_card(c3, "📈", PURPLE, "Avg Order Value", f"${avg_order:,.0f}", "Per Transaction", "neutral")
-    stat_card(c4, "🕐", ORANGE, "Avg Ship Time", f"{avg_ship:.1f} days", "Order to Delivery", "neutral")
-    stat_card(c5, "◈", RED, "Categories", f"{n_cats}", " · ".join(df['Category'].unique()[:3]), "neutral")
+    # Monthly trend — professional
+    st.markdown("""<div class='section-hdr'>
+        <span class='sec-icon'>📈</span>
+        <span class='sec-title'>Monthly Revenue Trend</span>
+        <span class='sec-badge'>4 Years</span>
+    </div>""", unsafe_allow_html=True)
 
-    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+    fig, ax = mfig(11, 4)
+    x = monthly['Date']
+    y = monthly['Sales']/1e3
 
-    # Monthly Revenue Trend
-    monthly['MA3'] = monthly['Sales'].rolling(3, min_periods=1).mean()
-    peak_idx = monthly['Sales'].idxmax()
+    # Gradient fill using polygon
+    ax.fill_between(x, y, alpha=0.15, color=C2)
+    ax.plot(x, y, color=C2, lw=2, zorder=3)
 
-    st.markdown(f"""
-    <div class="panel">
-        <div class="panel-title">Monthly Revenue Trend</div>
-        <div class="panel-sub">{yr_min}-{yr_max} · 3-month moving average overlay · $K</div>
-    """, unsafe_allow_html=True)
+    # Moving average overlay
+    ma = monthly['Sales'].rolling(3).mean()/1e3
+    ax.plot(x, ma, color=C4, lw=1.2, ls='--', alpha=0.7, label='3-mo avg')
 
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=monthly['Date'], y=monthly['Sales']/1e3, name='Monthly Revenue',
-                              line=dict(color=BLUE, width=2.2), fill='tozeroy',
-                              fillcolor='rgba(59,130,246,0.10)'))
-    fig.add_trace(go.Scatter(x=monthly['Date'], y=monthly['MA3']/1e3, name='3-Month Moving Avg',
-                              line=dict(color=ORANGE, width=1.6, dash='dot')))
-    fig.add_trace(go.Scatter(x=[monthly.loc[peak_idx, 'Date']]*2, y=[0, monthly['Sales'].max()/1e3],
-                              name='Peak Month', mode='lines', line=dict(color=GREEN, width=1.2, dash='dash'),
-                              hoverinfo='skip'))
-    fig.add_trace(go.Scatter(x=[monthly.loc[peak_idx, 'Date']], y=[monthly.loc[peak_idx, 'Sales']/1e3],
-                              mode='markers+text', text=[f"Peak: ${monthly.loc[peak_idx,'Sales']/1e3:.0f}K"],
-                              textposition='top center', textfont=dict(color=GREEN, size=11),
-                              marker=dict(color=GREEN, size=9, line=dict(color=BG, width=1.5)),
-                              showlegend=False, hoverinfo='skip'))
-    lay = base_layout(height=380)
-    lay['yaxis']['tickprefix'] = '$'
-    lay['yaxis']['ticksuffix'] = 'K'
-    fig.update_layout(**lay)
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    st.markdown("</div>", unsafe_allow_html=True)
+    # Peak marker
+    pidx = monthly['Sales'].idxmax()
+    ax.scatter(x.iloc[pidx], y.iloc[pidx], color=UP, s=80, zorder=6, edgecolors=BG, lw=1.5)
+    ax.annotate(f" Peak ${y.iloc[pidx]:.0f}K",
+                (x.iloc[pidx], y.iloc[pidx]),
+                xytext=(6, 6), textcoords='offset points',
+                color=UP, fontsize=8, fontweight='700')
 
-    # By Year / Category / Region row
-    col1, col2, col3 = st.columns([1, 1.3, 1.3])
+    # Year shading
+    for yr in [2014,2015,2016,2017]:
+        start = pd.Timestamp(f'{yr}-01-01')
+        end   = pd.Timestamp(f'{yr}-12-31')
+        if yr % 2 == 0:
+            ax.axvspan(start, end, alpha=0.04, color=C2, zorder=0)
+        ax.text(pd.Timestamp(f'{yr}-07-01'), ax.get_ylim()[0]+1,
+                str(yr), ha='center', color=TK, fontsize=8, alpha=0.6)
 
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %y'))
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+    plt.setp(ax.get_xticklabels(), rotation=30, ha='right', color=TK)
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x,_: f'${x:.0f}K'))
+    ax.set_ylabel('')
+    legend = ax.legend(facecolor=PNL, edgecolor=GRD, labelcolor=C4, fontsize=8)
+    finish(fig)
+    st.pyplot(fig)
+
+    col1, col2 = st.columns(2)
     with col1:
-        st.markdown('<div class="panel"><div class="panel-title">By Year</div><div class="panel-sub">Total revenue</div>', unsafe_allow_html=True)
+        st.markdown("""<div class='section-hdr'>
+            <span class='sec-icon'>📅</span><span class='sec-title'>Revenue by Year</span>
+        </div>""", unsafe_allow_html=True)
         yearly = df.groupby('Year')['Sales'].sum()
-        colors = [BLUE, GREEN, PURPLE, ORANGE, CYAN]
-        fig2 = go.Figure(go.Bar(x=yearly.index.astype(str), y=yearly.values/1e6,
-                                 marker_color=[colors[i % len(colors)] for i in range(len(yearly))],
-                                 width=0.5,
-                                 text=[f"${v/1e6:.1f}M" for v in yearly.values],
-                                 textposition='outside', textfont=dict(color=TEXT, size=11)))
-        lay2 = base_layout(height=320, legend=False)
-        lay2['yaxis']['tickprefix'] = '$'
-        lay2['yaxis']['ticksuffix'] = 'M'
-        fig2.update_layout(**lay2)
-        st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar': False})
-        st.markdown("</div>", unsafe_allow_html=True)
+        fig2, ax2 = mfig(5, 3)
+        bcolors = [C1,C2,C3,C4]
+        bars = ax2.bar(yearly.index.astype(str), yearly.values/1e3,
+                       color=bcolors, width=0.5, edgecolor='none', zorder=3)
+        for bar,val in zip(bars, yearly.values):
+            ax2.text(bar.get_x()+bar.get_width()/2, val/1e3+0.5,
+                     f'${val/1e3:.0f}K', ha='center', va='bottom',
+                     color=C5, fontsize=9, fontweight='600')
+        ax2.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x,_: f'${x:.0f}K'))
+        finish(fig2)
+        st.pyplot(fig2)
 
     with col2:
-        st.markdown('<div class="panel"><div class="panel-title">Revenue by Category</div>', unsafe_allow_html=True)
-        categories = df['Category'].unique().tolist()
-        if 'cat_sel' not in st.session_state:
-            st.session_state.cat_sel = categories[0]
-        btn_cols = st.columns(len(categories))
-        for i, cname in enumerate(categories):
-            active = st.session_state.cat_sel == cname
-            if btn_cols[i].button(cname, key=f"cat_{cname}", type=("primary" if active else "secondary")):
-                st.session_state.cat_sel = cname
-        cat = df.groupby('Category')['Sales'].sum().sort_values()
-        bar_colors = [BLUE if idx == st.session_state.cat_sel else "#2a3140" for idx in cat.index]
-        fig3 = go.Figure(go.Bar(y=cat.index, x=cat.values/1e3, orientation='h',
-                                 marker_color=bar_colors,
-                                 text=[f"${v/1e3:.0f}K" for v in cat.values],
-                                 textposition='outside', textfont=dict(color=TEXT, size=11)))
-        lay3 = base_layout(height=280, legend=False)
-        lay3['xaxis']['tickprefix'] = '$'
-        lay3['xaxis']['ticksuffix'] = 'K'
-        lay3['xaxis']['showgrid'] = True
-        lay3['xaxis']['gridcolor'] = GRID
-        fig3.update_layout(**lay3)
-        st.plotly_chart(fig3, use_container_width=True, config={'displayModeBar': False})
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("""<div class='section-hdr'>
+            <span class='sec-icon'>🗂</span><span class='sec-title'>Revenue by Category</span>
+        </div>""", unsafe_allow_html=True)
+        cat_sel = st.multiselect("", df['Category'].unique().tolist(),
+                                 default=df['Category'].unique().tolist(),
+                                 label_visibility='collapsed')
+        cat = df[df['Category'].isin(cat_sel)].groupby('Category')['Sales'].sum().sort_values()
+        fig3, ax3 = mfig(5, 3)
+        for i,(idx,val) in enumerate(cat.items()):
+            ax3.barh(idx, val/1e3, color=[C2,C3,C4][i%3], height=0.38, zorder=3)
+            ax3.text(val/1e3+0.3, i, f'${val/1e3:.0f}K', va='center',
+                     color=C5, fontsize=9, fontweight='600')
+        ax3.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x,_: f'${x:.0f}K'))
+        finish(fig3)
+        st.pyplot(fig3)
 
-    with col3:
-        st.markdown('<div class="panel"><div class="panel-title">Revenue by Region</div>', unsafe_allow_html=True)
-        regions = df['Region'].unique().tolist()
-        if 'reg_sel' not in st.session_state:
-            st.session_state.reg_sel = regions[0]
-        btn_cols2 = st.columns(len(regions))
-        for i, rname in enumerate(regions):
-            active = st.session_state.reg_sel == rname
-            if btn_cols2[i].button(rname, key=f"reg_{rname}", type=("primary" if active else "secondary")):
-                st.session_state.reg_sel = rname
-        reg = df.groupby('Region')['Sales'].sum().sort_values()
-        bar_colors2 = [PURPLE if idx == st.session_state.reg_sel else "#2a3140" for idx in reg.index]
-        fig4 = go.Figure(go.Bar(y=reg.index, x=reg.values/1e3, orientation='h',
-                                 marker_color=bar_colors2,
-                                 text=[f"${v/1e3:.0f}K" for v in reg.values],
-                                 textposition='outside', textfont=dict(color=TEXT, size=11)))
-        lay4 = base_layout(height=280, legend=False)
-        lay4['xaxis']['tickprefix'] = '$'
-        lay4['xaxis']['ticksuffix'] = 'K'
-        lay4['xaxis']['showgrid'] = True
-        lay4['xaxis']['gridcolor'] = GRID
-        fig4.update_layout(**lay4)
-        st.plotly_chart(fig4, use_container_width=True, config={'displayModeBar': False})
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("""<div class='section-hdr'>
+        <span class='sec-icon'>🌍</span><span class='sec-title'>Revenue by Region</span>
+        <span class='sec-badge'>Interactive</span>
+    </div>""", unsafe_allow_html=True)
+    reg_sel = st.multiselect("", df['Region'].unique().tolist(),
+                              default=df['Region'].unique().tolist(),
+                              label_visibility='collapsed')
+    reg = df[df['Region'].isin(reg_sel)].groupby('Region')['Sales'].sum().sort_values()
+    fig4, ax4 = mfig(11, 2.6)
+    for i,(idx,val) in enumerate(reg.items()):
+        ax4.barh(idx, val/1e3, color=[C1,C2,C3,C4][i%4], height=0.38, zorder=3)
+        ax4.text(val/1e3+0.3, i, f'${val/1e3:.0f}K', va='center',
+                 color=C5, fontsize=9, fontweight='600')
+    ax4.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x,_: f'${x:.0f}K'))
+    finish(fig4)
+    st.pyplot(fig4)
 
 # ══════════════════════════════════════════════════════════════════════════
-# PAGE 2 — FORECASTING
+#  PAGE 2 — FORECASTING
 # ══════════════════════════════════════════════════════════════════════════
-elif page == "📈  Forecasting":
+elif page == "🔮  Forecast Explorer":
+    st.markdown("<div class='page-tag'>Prophet Model</div>", unsafe_allow_html=True)
+    st.title("Forecast Explorer")
+    st.markdown("<p>Select a segment and horizon to generate an AI-powered demand forecast.</p>", unsafe_allow_html=True)
 
-    st.markdown("""
-    <h1 class="page-title">Forecast Explorer</h1>
-    <p class="page-sub">Prophet model projections with confidence intervals</p>
-    """, unsafe_allow_html=True)
+    c1,c2,c3 = st.columns([2,2,1])
+    with c1: seg_type = st.selectbox("Segment Type", ["Category","Region"])
+    with c2:
+        opts = df['Category'].unique().tolist() if seg_type=="Category" else df['Region'].unique().tolist()
+        seg_val = st.selectbox(f"Select {seg_type}", opts)
+        seg_df  = df[df['Category']==seg_val] if seg_type=="Category" else df[df['Region']==seg_val]
+    with c3: horizon = st.slider("Months", 1, 3, 3)
 
-    segments = df['Category'].unique().tolist() + df['Region'].unique().tolist()
-    if 'fc_sel' not in st.session_state:
-        st.session_state.fc_sel = segments[0]
+    seg_m = seg_df.groupby(pd.Grouper(key='Order Date',freq='ME'))['Sales'].sum().reset_index()
+    seg_m.columns = ['ds','y']
 
-    st.markdown('<div class="panel"><div class="panel-title" style="margin-bottom:10px;">Segment Type</div>', unsafe_allow_html=True)
-    seg_cols = st.columns(len(segments) + 2)
-    for i, s in enumerate(segments):
-        active = st.session_state.fc_sel == s
-        if seg_cols[i].button(s, key=f"seg_{s}", type=("primary" if active else "secondary")):
-            st.session_state.fc_sel = s
-    with seg_cols[-1]:
-        horizon = st.slider("FORECAST HORIZON — MONTHS", 1, 6, 3)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    seg_val = st.session_state.fc_sel
-    if seg_val in df['Category'].unique():
-        seg_df = df[df['Category'] == seg_val]
-    else:
-        seg_df = df[df['Region'] == seg_val]
-
-    seg_monthly = seg_df.groupby(pd.Grouper(key='Order Date', freq='ME'))['Sales'].sum().reset_index()
-    seg_monthly.columns = ['ds', 'y']
-
-    with st.spinner("Running Prophet model..."):
+    with st.spinner("Running Prophet..."):
         m = Prophet(yearly_seasonality=True, weekly_seasonality=False,
                     daily_seasonality=False, seasonality_mode='additive')
-        m.fit(seg_monthly)
+        m.fit(seg_m)
         future = m.make_future_dataframe(periods=horizon, freq='ME')
         fc = m.predict(future)
 
+    st.markdown("""<div class='section-hdr'>
+        <span class='sec-icon'>📈</span><span class='sec-title'>Sales Forecast</span>
+        <span class='sec-badge'>Prophet</span>
+    </div>""", unsafe_allow_html=True)
+
+    fig, ax = mfig(11, 4)
+    ax.plot(seg_m['ds'], seg_m['y']/1e3, color=C2, lw=2, label='Historical', zorder=3)
+    ax.fill_between(seg_m['ds'], seg_m['y']/1e3, alpha=0.1, color=C2)
+
     fo = fc.tail(horizon)
+    ax.plot(fo['ds'], fo['yhat']/1e3, color=C4, lw=2.2, marker='o',
+            markersize=8, label='Forecast', zorder=5, markeredgecolor=BG, markeredgewidth=1.5)
+    ax.fill_between(fo['ds'], fo['yhat_lower']/1e3, fo['yhat_upper']/1e3,
+                    alpha=0.2, color=C4, label='95% Confidence')
+    ax.axvline(seg_m['ds'].iloc[-1], color=C3, ls=':', lw=1.2, alpha=0.6)
 
-    st.markdown(f"""
-    <div class="panel">
-        <div class="panel-title">Revenue Forecast — {seg_val}</div>
-        <div class="panel-sub">Historical actuals + Prophet model projection · 95% confidence interval</div>
-    """, unsafe_allow_html=True)
+    for _,row in fo.iterrows():
+        ax.annotate(f"${row['yhat']/1e3:.1f}K",
+                    (row['ds'], row['yhat']/1e3),
+                    xytext=(0,10), textcoords='offset points',
+                    ha='center', color=C4, fontsize=8, fontweight='700')
 
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=seg_monthly['ds'], y=seg_monthly['y']/1e3, name='Actual Revenue',
-                              line=dict(color=BLUE, width=2.2)))
-    fig.add_trace(go.Scatter(x=fo['ds'], y=fo['yhat_upper']/1e3, line=dict(width=0),
-                              showlegend=False, hoverinfo='skip'))
-    fig.add_trace(go.Scatter(x=fo['ds'], y=fo['yhat_lower']/1e3, fill='tonexty',
-                              fillcolor='rgba(59,130,246,0.15)', line=dict(width=0),
-                              name='95% Confidence Band'))
-    fig.add_trace(go.Scatter(x=fo['ds'], y=fo['yhat']/1e3, name='Forecast',
-                              line=dict(color=BLUE, width=2.2, dash='dash'),
-                              mode='lines+markers', marker=dict(size=8, color=BLUE)))
-    lay = base_layout(height=400)
-    lay['yaxis']['tickprefix'] = '$'
-    lay['yaxis']['ticksuffix'] = 'K'
-    fig.update_layout(**lay)
-    fig.add_annotation(x=fo['ds'].iloc[0], y=1.0, yref='paper', text="Forecast →",
-                        showarrow=False, font=dict(color=TEXT_DIM, size=11), xanchor='left')
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    st.markdown("</div>", unsafe_allow_html=True)
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %y'))
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+    plt.setp(ax.get_xticklabels(), rotation=30, ha='right', color=TK)
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x,_: f'${x:.0f}K'))
+    legend = ax.legend(facecolor=PNL, edgecolor=GRD, labelcolor=C5, fontsize=8)
+    finish(fig)
+    st.pyplot(fig)
 
-    train_pred = fc['yhat'].iloc[:len(seg_monthly)].values
-    mae = np.mean(np.abs(seg_monthly['y'].values - train_pred))
-    rmse = np.sqrt(np.mean((seg_monthly['y'].values - train_pred) ** 2))
-    m1_pct = (fo['yhat'].iloc[0] - seg_monthly['y'].iloc[-1]) / seg_monthly['y'].iloc[-1] * 100
-    m3_pct = (fo['yhat'].iloc[-1] - fo['yhat'].iloc[0]) / fo['yhat'].iloc[0] * 100
+    tp   = fc['yhat'].iloc[:len(seg_m)].values
+    mae  = np.mean(np.abs(seg_m['y'].values - tp))
+    rmse = np.sqrt(np.mean((seg_m['y'].values - tp)**2))
 
-    c1, c2, c3, c4 = st.columns(4)
-    stat_card(c1, "≈", CYAN, "MAE", f"${mae/1e3:.1f}K", "Mean Absolute Error", "neutral")
-    stat_card(c2, "📈", ORANGE, "RMSE", f"${rmse/1e3:.1f}K", "Root Mean Sq. Error", "neutral")
-    stat_card(c3, "↗", GREEN, "Month +1", f"${fo['yhat'].iloc[0]/1e3:.0f}K", f"↗ {m1_pct:+.1f}% vs prior", "up" if m1_pct >= 0 else "down")
-    stat_card(c4, "↗", PURPLE, f"Month +{horizon}", f"${fo['yhat'].iloc[-1]/1e3:.0f}K", f"↗ {m3_pct:+.1f}% vs current", "up" if m3_pct >= 0 else "down")
+    st.markdown("""<div class='section-hdr'>
+        <span class='sec-icon'>📐</span><span class='sec-title'>Model Accuracy</span>
+    </div>""", unsafe_allow_html=True)
+    m1,m2,m3,m4 = st.columns(4)
+    for col,lbl,val,sub in [
+        (m1,"MAE",         f"${mae/1e3:.1f}K",              "Mean Abs. Error"),
+        (m2,"RMSE",        f"${rmse/1e3:.1f}K",             "Root Mean Sq. Error"),
+        (m3,"Month +1",    f"${fo['yhat'].iloc[0]/1e3:.1f}K","Next Month"),
+        (m4,"Month +3",    f"${fo['yhat'].iloc[-1]/1e3:.1f}K","3 Months Out"),
+    ]:
+        with col:
+            st.markdown(f"""<div class='stat-card'>
+                <div class='stat-label'>{lbl}</div>
+                <div class='stat-value' style='font-size:22px;'>{val}</div>
+                <div class='stat-sub'>{sub}</div>
+            </div>""", unsafe_allow_html=True)
 
-    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
-    st.markdown('<div class="panel"><div class="panel-title">Forecast Breakdown</div>', unsafe_allow_html=True)
-    tbl = fo[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].copy()
-    tbl.columns = ['Month', 'Forecast', 'Lower Bound', 'Upper Bound']
-    tbl['Month'] = tbl['Month'].dt.strftime('%b %y')
-    for c in ['Forecast', 'Lower Bound', 'Upper Bound']:
-        tbl[c] = tbl[c].apply(lambda x: f"${x/1e3:,.0f}K")
-    st.dataframe(tbl.set_index('Month'), use_container_width=True, hide_index=False)
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("""<div class='section-hdr'>
+        <span class='sec-icon'>📋</span><span class='sec-title'>Forecast Table</span>
+    </div>""", unsafe_allow_html=True)
+    tbl = fo[['ds','yhat','yhat_lower','yhat_upper']].copy()
+    tbl.columns = ['Month','Forecast','Lower Bound','Upper Bound']
+    tbl['Month'] = tbl['Month'].dt.strftime('%B %Y')
+    for c in ['Forecast','Lower Bound','Upper Bound']:
+        tbl[c] = tbl[c].apply(lambda x: f"${x:,.0f}")
+    st.dataframe(tbl.set_index('Month'), use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════════════
-# PAGE 3 — ANOMALY REPORT
+#  PAGE 3 — ANOMALIES
 # ══════════════════════════════════════════════════════════════════════════
-elif page == "⚠️  Anomaly Report":
-
-    st.markdown("""
-    <h1 class="page-title">Anomaly Report</h1>
-    <p class="page-sub">Isolation Forest + Z-Score detection on weekly sales data</p>
-    """, unsafe_allow_html=True)
+elif page == "🚨  Anomaly Report":
+    st.markdown("<div class='page-tag'>Detection Engine</div>", unsafe_allow_html=True)
+    st.title("Anomaly Report")
+    st.markdown("<p>Isolation Forest + Z-Score applied to 200+ weeks of sales data.</p>", unsafe_allow_html=True)
 
     ws = weekly.set_index('Date')['Sales']
     iso = IsolationForest(contamination=0.07, random_state=42)
-    iso_labels = iso.fit_predict(ws.values.reshape(-1, 1))
-    iso_anom = ws[iso_labels == -1]
+    iso_lbl = iso.fit_predict(ws.values.reshape(-1,1))
+    iso_an  = ws[iso_lbl==-1]
 
-    rm = ws.rolling(4, center=True).mean()
-    rs = ws.rolling(4, center=True).std()
-    z = (ws - rm) / rs
-    z_anom = ws[z.abs() > 2]
+    rm  = ws.rolling(8, center=True).mean()
+    rs  = ws.rolling(8, center=True).std()
+    z   = (ws - rm) / rs
+    z_an = ws[z.abs() > 2]
+    both = len(set(iso_an.index.date) & set(z_an.index.date))
 
-    both = len(set(iso_anom.index.date) & set(z_anom.index.date))
+    c1,c2,c3,c4 = st.columns(4)
+    for col,lbl,val,sub,kind in [
+        (c1,"Isolation Forest",   str(len(iso_an)), "Anomalies Found", "dn"),
+        (c2,"Z-Score Method",     str(len(z_an)),   "Anomalies Found", "dn"),
+        (c3,"Consensus",          str(both),         "Both Agree",      "up"),
+        (c4,"Weeks Analyzed",     str(len(ws)),      "Full Dataset",    ""),
+    ]:
+        with col:
+            sc = "stat-up" if kind=="up" else ("stat-down" if kind=="dn" else "stat-sub")
+            st.markdown(f"""<div class='stat-card'>
+                <div class='stat-label'>{lbl}</div>
+                <div class='stat-value' style='font-size:22px;'>{val}</div>
+                <div class='{sc}' style='font-size:12px;'>{sub}</div>
+            </div>""", unsafe_allow_html=True)
 
-    c1, c2, c3, c4 = st.columns(4)
-    stat_card(c1, "⚠", ORANGE, "Isolation Forest", f"{len(iso_anom)} flags", "Detected anomalies", "neutral")
-    stat_card(c2, "≈", RED, "Z-Score Anomalies", f"{len(z_anom)} flags", "|z| > 2", "neutral")
-    stat_card(c3, "⚡", PURPLE, "Consensus Flags", f"{both} flags", "Both methods agree", "neutral")
-    stat_card(c4, "📊", BLUE, "Weeks Analyzed", f"{len(ws)}", "Full dataset", "neutral")
+    st.markdown("""<div class='section-hdr'>
+        <span class='sec-icon'>📉</span><span class='sec-title'>Weekly Sales + Anomalies</span>
+        <span class='sec-badge'>Interactive</span>
+    </div>""", unsafe_allow_html=True)
 
-    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+    method = st.radio("", ["🌲 Isolation Forest","📊 Z-Score (|z|>2)"], horizontal=True)
+    anom   = iso_an if "Isolation" in method else z_an
 
-    if 'anom_method' not in st.session_state:
-        st.session_state.anom_method = "Isolation Forest"
+    fig, ax = mfig(11, 4)
+    ax.fill_between(ws.index, ws.values/1e3, alpha=0.08, color=C2)
+    ax.plot(ws.index, ws.values/1e3, color=C2, lw=1.5, alpha=0.9, label='Weekly Sales', zorder=2)
 
-    st.markdown('<div class="panel"><div class="panel-title">Detection Method</div>', unsafe_allow_html=True)
-    mcol1, mcol2, _ = st.columns([1, 1, 4])
-    if mcol1.button("Isolation Forest", type=("primary" if st.session_state.anom_method == "Isolation Forest" else "secondary")):
-        st.session_state.anom_method = "Isolation Forest"
-    if mcol2.button("Z-Score", type=("primary" if st.session_state.anom_method == "Z-Score" else "secondary")):
-        st.session_state.anom_method = "Z-Score"
-    st.markdown("</div>", unsafe_allow_html=True)
+    # Rolling mean line
+    rm_plot = ws.rolling(4).mean()/1e3
+    ax.plot(ws.index, rm_plot, color=C3, lw=1.2, ls='--', alpha=0.6, label='4-wk avg')
 
-    anom = iso_anom if st.session_state.anom_method == "Isolation Forest" else z_anom
-    rolling_avg = ws.rolling(4, center=True).mean()
-
-    st.markdown(f"""
-    <div class="panel">
-        <div class="panel-title">Weekly Sales — Anomaly Detection</div>
-        <div class="panel-sub">{st.session_state.anom_method} model · 4-week rolling average overlay</div>
-    """, unsafe_allow_html=True)
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=ws.index, y=ws.values/1e3, name='Weekly Revenue',
-                              line=dict(color="#e6edf3", width=1.6)))
-    fig.add_trace(go.Scatter(x=rolling_avg.index, y=rolling_avg.values/1e3, name='4-wk Rolling Avg',
-                              line=dict(color=ORANGE, width=1.4, dash='dot')))
     spikes = anom[anom > ws.mean()]
-    drops = anom[anom <= ws.mean()]
+    drops  = anom[anom <= ws.mean()]
     if len(spikes):
-        fig.add_trace(go.Scatter(x=spikes.index, y=spikes.values/1e3, mode='markers', name='Spike anomaly',
-                                  marker=dict(symbol='triangle-up', size=13, color=GREEN,
-                                              line=dict(color=BG, width=1))))
+        ax.scatter(spikes.index, spikes.values/1e3, color=UP, s=80, zorder=5,
+                   marker='^', label='Spike', edgecolors=BG, lw=1)
     if len(drops):
-        fig.add_trace(go.Scatter(x=drops.index, y=drops.values/1e3, mode='markers', name='Drop anomaly',
-                                  marker=dict(symbol='triangle-down', size=13, color=RED,
-                                              line=dict(color=BG, width=1))))
-    lay = base_layout(height=400)
-    lay['yaxis']['tickprefix'] = '$'
-    lay['yaxis']['ticksuffix'] = 'K'
-    fig.update_layout(**lay)
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    st.markdown("</div>", unsafe_allow_html=True)
+        ax.scatter(drops.index, drops.values/1e3, color=DN, s=80, zorder=5,
+                   marker='v', label='Drop', edgecolors=BG, lw=1)
 
-    st.markdown('<div class="panel"><div class="panel-title">Anomaly Log</div>', unsafe_allow_html=True)
-    anom_df = anom.reset_index()
-    anom_df.columns = ['Date', 'Sales']
-    anom_df['MonthNum'] = pd.to_datetime(anom_df['Date']).dt.month
-    anom_df['Signal'] = anom_df['Sales'].apply(lambda x: 'Spike' if x > ws.mean() else 'Drop')
-    cause_map = {
-        1: 'Post-holiday slowdown', 2: 'Post-holiday dip', 3: 'Promotional campaign activation',
-        4: 'Spring restocking', 5: 'Regional supply disruption', 6: 'Regional supply disruption',
-        7: 'Summer promotions', 8: 'Back-to-school surge', 9: 'End-of-quarter procurement surge',
-        10: 'Pre-holiday build-up', 11: 'Holiday season surge', 12: 'Christmas / year-end'
-    }
-    anom_df['Likely Cause'] = anom_df['MonthNum'].map(cause_map).fillna('Unusual fluctuation')
-    anom_df['Revenue'] = anom_df['Sales'].apply(lambda x: f"${x:,.0f}")
-    anom_df['Date'] = pd.to_datetime(anom_df['Date']).dt.strftime('%b %d, %Y')
-    anom_df = anom_df[['Date', 'Revenue', 'Signal', 'Likely Cause']].iloc[::-1]
-    st.dataframe(anom_df.set_index('Date'), use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %y'))
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=4))
+    plt.setp(ax.get_xticklabels(), rotation=30, ha='right', color=TK)
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x,_: f'${x:.0f}K'))
+    legend = ax.legend(facecolor=PNL, edgecolor=GRD, labelcolor=C5, fontsize=8)
+    finish(fig)
+    st.pyplot(fig)
+
+    st.markdown("""<div class='section-hdr'>
+        <span class='sec-icon'>📋</span><span class='sec-title'>Anomaly Log</span>
+    </div>""", unsafe_allow_html=True)
+    adf = anom.reset_index()
+    adf.columns = ['Date','Sales']
+    adf['Month'] = pd.to_datetime(adf['Date']).dt.month
+    adf['Signal'] = adf['Sales'].apply(lambda x: '🔺 Spike' if x > ws.mean() else '🔻 Drop')
+    cmap = {11:'Holiday season surge',12:'Christmas / year-end',
+            1:'Post-holiday dip',2:'Post-holiday slowdown',
+            7:'Summer promotions',8:'Back-to-school'}
+    adf['Cause'] = adf['Month'].map(cmap).fillna('Unusual fluctuation')
+    adf['Revenue'] = adf['Sales'].apply(lambda x: f"${x:,.0f}")
+    adf = adf[['Date','Revenue','Signal','Cause']].sort_values('Date', ascending=False)
+    st.dataframe(adf.set_index('Date'), use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════════════
-# PAGE 4 — DEMAND SEGMENTS
+#  PAGE 4 — SEGMENTS
 # ══════════════════════════════════════════════════════════════════════════
-elif page == "🗂️  Demand Segments":
+elif page == "📦  Demand Segments":
+    st.markdown("<div class='page-tag'>K-Means Clustering</div>", unsafe_allow_html=True)
+    st.title("Demand Segments")
+    st.markdown("<p>17 sub-categories segmented by volume, growth, volatility & order value.</p>", unsafe_allow_html=True)
 
-    st.markdown("""
-    <h1 class="page-title">Demand Segments</h1>
-    <p class="page-sub">K-Means clustering · 4 behavioral segments identified</p>
-    """, unsafe_allow_html=True)
-
-    features = df.groupby('Sub-Category').agg(
-        Total_Sales=('Sales', 'sum'), Avg_Order=('Sales', 'mean'),
-        Volatility=('Sales', 'std'), Count=('Sales', 'count')
+    feat = df.groupby('Sub-Category').agg(
+        Total_Sales=('Sales','sum'), Avg_Order=('Sales','mean'),
+        Volatility=('Sales','std'),  Count=('Sales','count')
     ).reset_index()
+    yoy = df.groupby(['Sub-Category','Year'])['Sales'].sum().unstack()
+    feat['Growth'] = yoy.pct_change(axis=1).mean(axis=1).values
+    feat = feat.dropna()
 
-    yoy = df.groupby(['Sub-Category', 'Year'])['Sales'].sum().unstack()
-    features['Growth'] = yoy.pct_change(axis=1).mean(axis=1).values
-    features = features.dropna()
-
-    X_s = StandardScaler().fit_transform(features[['Total_Sales', 'Avg_Order', 'Volatility', 'Growth']])
+    Xs = StandardScaler().fit_transform(feat[['Total_Sales','Avg_Order','Volatility','Growth']])
     km = KMeans(n_clusters=4, random_state=42, n_init=10)
-    features['Cluster'] = km.fit_predict(X_s)
+    feat['Cluster'] = km.fit_predict(Xs)
 
-    sc = features.groupby('Cluster')['Total_Sales'].mean().sort_values(ascending=False).index
-    lmap = {sc[0]: 'High Volume Stable', sc[1]: 'Growing Demand',
-            sc[2]: 'High Volatility', sc[3]: 'Declining Demand'}
-    features['Segment'] = features['Cluster'].map(lmap)
+    sc  = feat.groupby('Cluster')['Total_Sales'].mean().sort_values(ascending=False).index
+    lmp = {sc[0]:'🏆 High Volume, Stable', sc[1]:'📈 Growing Demand',
+           sc[2]:'⚡ High Volatility',     sc[3]:'📉 Declining Demand'}
+    feat['Segment'] = feat['Cluster'].map(lmp)
 
     pca = PCA(n_components=2)
-    Xp = pca.fit_transform(X_s)
-    features['x'] = (Xp[:, 0] - Xp[:, 0].min()) / (Xp[:, 0].max() - Xp[:, 0].min()) * 100
-    features['y'] = (Xp[:, 1] - Xp[:, 1].min()) / (Xp[:, 1].max() - Xp[:, 1].min()) * 100
+    Xp  = pca.fit_transform(Xs)
+    feat['x'] = Xp[:,0]; feat['y'] = Xp[:,1]
 
-    palette = {'High Volume Stable': BLUE, 'Growing Demand': GREEN,
-               'High Volatility': ORANGE, 'Declining Demand': RED}
+    pal = {'🏆 High Volume, Stable':C2,'📈 Growing Demand':UP,
+           '⚡ High Volatility':C4,    '📉 Declining Demand':DN}
 
-    strategies = {
-        'High Volume Stable': ('Automate replenishment · maintain safety stock', BLUE),
-        'Growing Demand': ('Increase forecast buffer 15-20% · expand SKUs', GREEN),
-        'High Volatility': ('Safety stock ×2 · weekly demand sensing', ORANGE),
-        'Declining Demand': ('Reduce orders · markdown aging inventory', RED),
+    st.markdown("""<div class='section-hdr'>
+        <span class='sec-icon'>🎯</span><span class='sec-title'>Cluster Map (PCA)</span>
+        <span class='sec-badge'>2D Projection</span>
+    </div>""", unsafe_allow_html=True)
+
+    fig, ax = mfig(11, 5)
+    ax.grid(axis='both', color=GRD, linewidth=0.5, linestyle='--', alpha=0.5)
+    for seg, grp in feat.groupby('Segment'):
+        ax.scatter(grp['x'], grp['y'], label=seg, color=pal[seg],
+                   s=140, edgecolors=PNL, lw=1.5, alpha=0.95, zorder=4)
+        for _,row in grp.iterrows():
+            ax.annotate(row['Sub-Category'], (row['x'], row['y']),
+                        fontsize=7.5, color=C5, ha='center', va='bottom',
+                        xytext=(0,8), textcoords='offset points')
+    ax.set_xlabel(f"PC1 — {pca.explained_variance_ratio_[0]*100:.0f}% variance", fontsize=9)
+    ax.set_ylabel(f"PC2 — {pca.explained_variance_ratio_[1]*100:.0f}% variance", fontsize=9)
+    legend = ax.legend(facecolor=BG, edgecolor=GRD, labelcolor=C5, fontsize=9, loc='upper right')
+    finish(fig)
+    st.pyplot(fig)
+
+    st.markdown("""<div class='section-hdr'>
+        <span class='sec-icon'>📋</span><span class='sec-title'>Strategy per Segment</span>
+    </div>""", unsafe_allow_html=True)
+
+    strat = {
+        '🏆 High Volume, Stable':  'Automate reorders. Maintain consistent safety stock. These never go out of demand.',
+        '📈 Growing Demand':        'Increase procurement 15–20%. Prioritise shelf space. Monitor acceleration monthly.',
+        '⚡ High Volatility':       'Use just-in-time inventory only. Avoid bulk orders. Demand is unpredictable.',
+        '📉 Declining Demand':      'Reduce stock now. Run clearance promotions before Q4 peak season.',
     }
+    bord = [C2, UP, C4, DN]
 
-    col_l, col_r = st.columns([1.6, 1])
-
-    with col_l:
-        st.markdown("""
-        <div class="panel">
-            <div class="panel-title">PCA Cluster Projection</div>
-            <div class="panel-sub">K-Means k=4 · X-axis: sales volume · Y-axis: demand stability</div>
-        """, unsafe_allow_html=True)
-
-        fig = go.Figure()
-        for seg, grp in features.groupby('Segment'):
-            fig.add_trace(go.Scatter(
-                x=grp['x'], y=grp['y'], mode='markers+text', name=seg,
-                text=grp['Sub-Category'], textposition='top center',
-                textfont=dict(size=9.5, color=TEXT_DIM),
-                marker=dict(size=13, color=palette[seg], line=dict(color=PANEL2, width=1.5))
-            ))
-        lay = base_layout(height=520)
-        lay['xaxis'].update(title='Sales Volume →', range=[-10, 110], showgrid=True, gridcolor=GRID)
-        lay['yaxis'].update(title='Stability →', range=[-10, 110])
-        lay['legend']['y'] = -0.14
-        fig.update_layout(**lay)
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with col_r:
-        for seg in ['High Volume Stable', 'Growing Demand', 'High Volatility', 'Declining Demand']:
-            grp = features[features['Segment'] == seg]
-            items = ' · '.join(sorted(grp['Sub-Category'].tolist()))
-            color = palette[seg]
-            strat_text, strat_color = strategies[seg]
+    col1,col2 = st.columns(2)
+    for i,(seg,grp) in enumerate(feat.groupby('Segment')):
+        items = ', '.join(sorted(grp['Sub-Category'].tolist()))
+        bc    = bord[i%4]
+        with (col1 if i%2==0 else col2):
             st.markdown(f"""
-            <div class="cluster-card" style="border-left-color:{color};">
-                <div class="cluster-head">
-                    <span class="cluster-dot" style="background:{color};"></span>
-                    <span class="cluster-name">{seg}</span>
-                </div>
-                <div class="cluster-items">{items}</div>
-                <div class="cluster-strategy" style="background:{strat_color}18;color:{strat_color};">{strat_text}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            <div class='cluster-card' style='border-left-color:{bc};'>
+                <div class='c-name'>{seg}</div>
+                <div class='c-items'>📦 {items}</div>
+                <div class='c-strat'>📌 {strat[seg]}</div>
+            </div>""", unsafe_allow_html=True)
