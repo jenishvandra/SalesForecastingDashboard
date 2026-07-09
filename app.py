@@ -20,9 +20,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 # ENHANCED DARK THEME STYLING
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap');
@@ -41,6 +41,9 @@ html, body, [data-testid="stAppViewContainer"] {
 }
 
 #MainMenu, footer, header { visibility: hidden !important; }
+
+/* ── HIDE SIDEBAR TOGGLE BUTTON ── */
+button[kind="header"] { display: none !important; }
 
 /* ── MAIN CONTENT BACKGROUND ── */
 [data-testid="stAppViewContainer"] > section {
@@ -319,9 +322,9 @@ hr {
 </style>
 """, unsafe_allow_html=True)
 
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 # DATA LOADING & PROCESSING
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 @st.cache_data
 def load_data():
     df = pd.read_csv('train.csv')
@@ -339,9 +342,9 @@ monthly.columns = ['Date','Sales']
 weekly = df.groupby(pd.Grouper(key='Order Date', freq='W'))['Sales'].sum().reset_index()
 weekly.columns = ['Date','Sales']
 
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 # COLOR PALETTE - PROFESSIONAL DARK THEME
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 BG   = '#0a0e27'
 PNL  = '#1a1f3a'
 GRD  = '#1e2947'
@@ -349,9 +352,9 @@ TK   = '#7691c0'
 C1,C2,C3,C4,C5 = '#4a6cf7','#7091E6','#8da1d7','#b8c5e8','#f8f9fa'
 UP,DN = '#3fb950','#f85149'
 
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 # CHART HELPERS
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 def mfig(w=10, h=4, ncols=1, nrows=1):
     fig, axes = plt.subplots(nrows, ncols, figsize=(w, h))
     fig.patch.set_facecolor(BG)
@@ -374,9 +377,9 @@ def finish(fig, tight=True):
         fig.tight_layout(pad=2.2)
     return fig
 
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 # SIDEBAR
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 yearly_rev = df.groupby('Year')['Sales'].sum()
 growth = (yearly_rev.iloc[-1] - yearly_rev.iloc[-2]) / yearly_rev.iloc[-2] * 100
 
@@ -425,9 +428,9 @@ with st.sidebar:
     st.markdown("<div style='font-size: 12px; color: #7691c0; margin-top: 16px; font-weight: 500;'>✨ Built with Streamlit, Prophet & Scikit-learn</div>", unsafe_allow_html=True)
     st.markdown("<div style='font-size: 11px; color: #4a5568; margin-top: 8px;'>● <span style='color: #3fb950;'>LIVE</span> Updated just now</div>", unsafe_allow_html=True)
 
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 # PAGE 1: SALES OVERVIEW
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 if page == "📊 Sales Overview":
     st.markdown("<div class='page-tag'>Real-time · Week 3 & 4</div>", unsafe_allow_html=True)
     st.title("Sales Overview")
@@ -543,9 +546,9 @@ if page == "📊 Sales Overview":
         finish(fig4)
         st.pyplot(fig4)
 
-# ══════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════��════════════════════════════[...]
 # PAGE 2: FORECASTING
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 elif page == "🔮 Forecasting":
     st.markdown("<div class='page-tag'>Prophet model · Predictions</div>", unsafe_allow_html=True)
     st.title("Forecast Explorer")
@@ -640,9 +643,9 @@ elif page == "🔮 Forecasting":
         tbl[c] = tbl[c].apply(lambda x: f"${x:,.0f}")
     st.dataframe(tbl.set_index('Month'), use_container_width=True, height=280)
 
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 # PAGE 3: ANOMALY DETECTION
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 elif page == "🚨 Anomaly Report":
     st.markdown("<div class='page-tag'>Detection Engine</div>", unsafe_allow_html=True)
     st.title("Anomaly Report")
@@ -726,9 +729,9 @@ elif page == "🚨 Anomaly Report":
     adf = adf[['Date', 'Revenue', 'Signal', 'Cause']].sort_values('Date', ascending=False)
     st.dataframe(adf.set_index('Date'), use_container_width=True, height=320)
 
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 # PAGE 4: DEMAND SEGMENTS
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════[...]
 elif page == "📦 Demand Segments":
     st.markdown("<div class='page-tag'>K-Means clustering · 4 behavioral segments</div>", unsafe_allow_html=True)
     st.title("Demand Segments")
