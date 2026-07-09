@@ -39,7 +39,7 @@ st.markdown("""
     visibility: hidden;
 }
 
-/* ── SIDEBAR (SalesIQ Style) ── */
+/* ── SIDEBAR ── */
 [data-testid="stSidebar"] {
     background: #ffffff !important;
     border-right: 1px solid #e5e7eb !important;
@@ -51,7 +51,6 @@ st.markdown("""
     color: #1a1a2e !important;
 }
 
-/* Sidebar Logo */
 .sidebar-logo {
     padding: 24px 20px 16px 20px;
     border-bottom: 1px solid #e5e7eb;
@@ -73,7 +72,7 @@ st.markdown("""
     margin: 2px 0 0 0;
 }
 
-/* ── Navigation (SalesIQ Style) ── */
+/* ── Navigation ── */
 [data-testid="stSidebar"] .stRadio > div {
     display: flex !important;
     flex-direction: column !important;
@@ -109,7 +108,6 @@ st.markdown("""
     border-radius: 10px !important;
 }
 
-/* Hide radio circle */
 [data-testid="stSidebar"] .stRadio input[type="radio"] {
     display: none !important;
 }
@@ -117,7 +115,7 @@ st.markdown("""
     display: none !important;
 }
 
-/* ── Sidebar Quick Stats ── */
+/* ── Sidebar Stats ── */
 .sidebar-stats {
     padding: 0 16px;
     margin-top: 8px;
@@ -153,12 +151,7 @@ st.markdown("""
     color: #10b981;
 }
 
-/* ── MAIN CONTENT ── */
-.main-content {
-    padding: 0 20px 20px 20px;
-}
-
-/* Page Header */
+/* ── Page Header ── */
 .page-header {
     margin-bottom: 24px;
 }
@@ -380,7 +373,6 @@ st.markdown("""
     border-radius: 10px !important;
 }
 
-/* ── Responsive ── */
 @media (max-width: 768px) {
     .kpi-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -389,7 +381,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ── DATA LOADING (YOUR ORIGINAL LOGIC) ──────────────────────────────────
+# ── DATA LOADING ──────────────────────────────────────────────────────────
 @st.cache_data
 def load_data():
     df = pd.read_csv('train.csv')
@@ -417,22 +409,22 @@ UP,DN = '#10b981','#ef4444'
 
 def mfig(w=10, h=4, ncols=1, nrows=1):
     fig, axes = plt.subplots(nrows, ncols, figsize=(w, h))
-    fig.patch.set_facecolor('transparent')
-    alist = list(axes.flat) if hasattr(axes,'flat') else [axes]
+    fig.patch.set_facecolor('white')
+    alist = list(axes.flat) if hasattr(axes, 'flat') else [axes]
     for ax in alist:
-        ax.set_facecolor('transparent')
+        ax.set_facecolor('white')
         ax.tick_params(colors=TK, labelsize=8, length=0, pad=4)
         ax.xaxis.label.set_color(TK)
         ax.yaxis.label.set_color(TK)
         ax.title.set_color(C5)
-        for s in ax.spines.values(): 
+        for s in ax.spines.values():
             s.set_edgecolor(GRD)
         ax.grid(axis='y', color=GRD, linewidth=0.6, linestyle='--', alpha=0.7)
         ax.set_axisbelow(True)
     return fig, axes
 
 def finish(fig, tight=True):
-    if tight: 
+    if tight:
         fig.tight_layout(pad=1.8)
     return fig
 
@@ -502,29 +494,57 @@ if page == "📊 Sales Overview":
     """, unsafe_allow_html=True)
 
     # KPI Cards
-    total   = df['Sales'].sum()
-    orders  = len(df)
+    total = df['Sales'].sum()
+    orders = len(df)
     avg_ord = df['Sales'].mean()
     avg_shp = df['Ship_Days'].mean()
 
-    kpi_data = [
-        ("Total Revenue", f"${total/1e6:.2f}M", f"↑ {growth:.1f}% YoY", "up"),
-        ("Total Orders", f"{orders:,}", "4 Years of Data", "neutral"),
-        ("Avg Order Value", f"${avg_ord:,.0f}", "Per Transaction", "neutral"),
-        ("Avg Ship Time", f"{avg_shp:.1f}d", "Order to Delivery", "neutral"),
-        ("Categories", "3", "Furn · Tech · Office", "neutral"),
-    ]
-
-    cols = st.columns(5)
-    for col, (label, value, sub, cls) in zip(cols, kpi_data):
-        with col:
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='label'>{label}</div>
-                <div class='value'>{value}</div>
-                <div class='sub {cls}'>{sub}</div>
-            </div>
-            """, unsafe_allow_html=True)
+    col1, col2, col3, col4, col5 = st.columns(5)
+    
+    with col1:
+        st.markdown(f"""
+        <div class='kpi-card'>
+            <div class='label'>Total Revenue</div>
+            <div class='value'>${total/1e6:.2f}M</div>
+            <div class='sub up'>↑ {growth:.1f}% YoY</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class='kpi-card'>
+            <div class='label'>Total Orders</div>
+            <div class='value'>{orders:,}</div>
+            <div class='sub neutral'>4 Years of Data</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div class='kpi-card'>
+            <div class='label'>Avg Order Value</div>
+            <div class='value'>${avg_ord:,.0f}</div>
+            <div class='sub neutral'>Per Transaction</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        st.markdown(f"""
+        <div class='kpi-card'>
+            <div class='label'>Avg Ship Time</div>
+            <div class='value'>{avg_shp:.1f}d</div>
+            <div class='sub neutral'>Order to Delivery</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col5:
+        st.markdown("""
+        <div class='kpi-card'>
+            <div class='label'>Categories</div>
+            <div class='value'>3</div>
+            <div class='sub neutral'>Furn · Tech · Office</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     # Monthly Revenue Trend
     st.markdown("""
@@ -552,9 +572,9 @@ if page == "📊 Sales Overview":
                 xytext=(6, 10), textcoords='offset points',
                 color=UP, fontsize=9, fontweight='700')
 
-    for yr in [2014,2015,2016,2017]:
+    for yr in [2014, 2015, 2016, 2017]:
         start = pd.Timestamp(f'{yr}-01-01')
-        end   = pd.Timestamp(f'{yr}-12-31')
+        end = pd.Timestamp(f'{yr}-12-31')
         if yr % 2 == 0:
             ax.axvspan(start, end, alpha=0.04, color=C1, zorder=0)
         ax.text(pd.Timestamp(f'{yr}-07-01'), ax.get_ylim()[0]+1,
@@ -653,7 +673,7 @@ if page == "📊 Sales Overview":
     """, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════════════════
-#  PAGE 2 — FORECASTING (YOUR ORIGINAL LOGIC)
+#  PAGE 2 — FORECASTING
 # ══════════════════════════════════════════════════════════════════════════
 elif page == "🔮 Forecasting":
     st.markdown("""
@@ -664,7 +684,6 @@ elif page == "🔮 Forecasting":
     </div>
     """, unsafe_allow_html=True)
 
-    # YOUR ORIGINAL FORECASTING LOGIC
     c1, c2, c3 = st.columns([2, 2, 1])
     with c1: 
         seg_type = st.selectbox("Segment Type", ["Category", "Region"])
@@ -693,7 +712,6 @@ elif page == "🔮 Forecasting":
     </div>
     """, unsafe_allow_html=True)
 
-    # YOUR ORIGINAL CHART
     fig, ax = mfig(11, 4)
     ax.plot(seg_m['ds'], seg_m['y']/1e3, color=C2, lw=2, label='Historical', zorder=3)
     ax.fill_between(seg_m['ds'], seg_m['y']/1e3, alpha=0.1, color=C2)
@@ -719,7 +737,6 @@ elif page == "🔮 Forecasting":
     finish(fig)
     st.pyplot(fig)
 
-    # YOUR ORIGINAL METRICS
     tp = fc['yhat'].iloc[:len(seg_m)].values
     mae = np.mean(np.abs(seg_m['y'].values - tp))
     rmse = np.sqrt(np.mean((seg_m['y'].values - tp)**2))
@@ -732,22 +749,43 @@ elif page == "🔮 Forecasting":
     """, unsafe_allow_html=True)
     
     m1, m2, m3, m4 = st.columns(4)
-    for col, lbl, val, sub in [
-        (m1, "MAE", f"${mae/1e3:.1f}K", "Mean Abs. Error"),
-        (m2, "RMSE", f"${rmse/1e3:.1f}K", "Root Mean Sq. Error"),
-        (m3, "Month +1", f"${fo['yhat'].iloc[0]/1e3:.1f}K", "Next Month"),
-        (m4, "Month +3", f"${fo['yhat'].iloc[-1]/1e3:.1f}K", "3 Months Out"),
-    ]:
-        with col:
-            st.markdown(f"""
-            <div class='metric-box'>
-                <div class='label'>{lbl}</div>
-                <div class='value'>{val}</div>
-                <div class='sub'>{sub}</div>
-            </div>
-            """, unsafe_allow_html=True)
+    
+    with m1:
+        st.markdown(f"""
+        <div class='metric-box'>
+            <div class='label'>MAE</div>
+            <div class='value'>${mae/1e3:.1f}K</div>
+            <div class='sub'>Mean Abs. Error</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with m2:
+        st.markdown(f"""
+        <div class='metric-box'>
+            <div class='label'>RMSE</div>
+            <div class='value'>${rmse/1e3:.1f}K</div>
+            <div class='sub'>Root Mean Sq. Error</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with m3:
+        st.markdown(f"""
+        <div class='metric-box'>
+            <div class='label'>Month +1</div>
+            <div class='value'>${fo['yhat'].iloc[0]/1e3:.1f}K</div>
+            <div class='sub'>Next Month</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with m4:
+        st.markdown(f"""
+        <div class='metric-box'>
+            <div class='label'>Month +3</div>
+            <div class='value'>${fo['yhat'].iloc[-1]/1e3:.1f}K</div>
+            <div class='sub'>3 Months Out</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    # YOUR ORIGINAL TABLE
     st.markdown("""
     <div class='section-header'>
         <span class='icon'>📋</span>
@@ -762,7 +800,6 @@ elif page == "🔮 Forecasting":
         tbl[c] = tbl[c].apply(lambda x: f"${x:,.0f}")
     st.dataframe(tbl.set_index('Month'), use_container_width=True)
 
-    # Quick Stats Footer
     total = df['Sales'].sum()
     st.markdown(f"""
     <div class='quick-stats'>
@@ -778,21 +815,11 @@ elif page == "🔮 Forecasting":
     """, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════════════════
-#  PAGE 3 — ANOMALIES (YOUR ORIGINAL LOGIC)
+#  PAGE 3 — ANOMALIES
 # ══════════════════════════════════════════════════════════════════════════
 elif page == "🚨 Anomaly Report":
     st.markdown("""
     <div class='page-header'>
         <div class='tag'>Detection Engine</div>
         <h1>Anomaly Report</h1>
-        <p>Isolation Forest + Z-Score applied to 200+ weeks of sales data.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # YOUR ORIGINAL ANOMALY DETECTION
-    ws = weekly.set_index('Date')['Sales']
-    iso = IsolationForest(contamination=0.07, random_state=42)
-    iso_lbl = iso.fit_predict(ws.values.reshape(-1, 1))
-    iso_an = ws[iso_lbl == -1]
-
-    rm = ws.rolling(8, center=True).mean()
+        <p>Isolation Forest + Z-S
