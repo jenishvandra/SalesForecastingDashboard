@@ -424,7 +424,7 @@ nav_items = [
     ('segments', '🗂', 'Demand Segments'),
 ]
 
-# Build sidebar HTML with JavaScript navigation
+# Build sidebar HTML
 nav_html = ""
 for key, icon, label in nav_items:
     active = "active" if st.session_state.page == key else ""
@@ -472,7 +472,6 @@ if 'page' in params:
 page = st.session_state.page
 
 # ── NAV BUTTONS (top navigation bar) ─────────────────────────────────────
-# Create navigation buttons in a row
 nav_cols = st.columns(4)
 nav_keys = ['overview', 'forecast', 'anomaly', 'segments']
 nav_labels = ['📊 Overview', '📈 Forecast', '🔔 Anomalies', '🗂 Segments']
@@ -657,7 +656,7 @@ elif page == 'forecast':
     with sc2:
         st.markdown("<div style='font-size:10px;color:#8b949e;text-transform:uppercase;"
                     "letter-spacing:.8px;font-weight:600;margin-bottom:6px;'>"
-                    f"Forecast Horizon</div>", unsafe_allow_html=True)
+                    "Forecast Horizon</div>", unsafe_allow_html=True)
         horizon = st.slider("", 1, 3, 3, label_visibility='collapsed')
     
     st.markdown("</div>", unsafe_allow_html=True)
@@ -767,4 +766,202 @@ elif page == 'anomaly':
 
     a1, a2, a3, a4 = st.columns(4)
     kpi_card(a1, "Isolation Forest", f"{len(iso_an)} flags", "Anomalies Detected", "dn", "⚠", "#d29922")
-    kpi_card
+    kpi_card(a2, "Z-Score Anomalies", f"{len(z_an)} flags", "Anomalies Detected", "dn", "📉", "#f85149")
+    kpi_card(a3, "Consensus Flags", f"{both} flags", "Both Methods Agree", "up", "⚡", "#a371f7")
+    kpi_card(a4, "Weeks Analyzed", f"{len(ws)}", "Full Dataset", "nu", "📊", "#3D52A0")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:10px;color:#8b949e;text-transform:uppercase;"
+                "letter-spacing:.8px;font-weight:600;margin-bottom:8px;'>"
+                "Detection Method:</div>", unsafe_allow_html=True)
+    method = st.radio("det", ["Isolation Forest", "Z-Score"],
+                      horizontal=True, label_visibility='collapsed')
+    anom = iso_an if method == "Isolation Forest" else z_an
+    spikes = anom[anom > ws.mean()]
+    drops = anom[anom <= ws.mean()]
+    rm4 = ws.rolling(4).mean()
+
+    st.markdown(f"<div class='cc'><div class='ct'>Weekly Sales — Anomaly Detection</div>"
+                f"<div class='cs'>{method} model · 4-week rolling average overlay</div>",
+                unsafe_allow_html=True)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=ws.index, y=ws.values/1e3,
+        name='Weekly Revenue', line=dict(color=BLUE, width=1.5),
+        fill='tozeroy', fillcolor='rgba(112,145,230,0.06)',
+        hovertemplate='%{x|%b %y}<br>$%{y:.0f}K<extra></extra>'
+    ))
+    fig.add_trace(go.Scatter(
+        x=ws.index, y=rm4/1e3,
+        name='4-wk Rolling Avg', line=dict(color=YELLOW, width=1.2, dash='dash'),
+        hovertemplate='4wk avg: $%{y:.0f}K<extra></extra>'
+    ))
+    if len(spikes):
+        fig.add_trace(go.Scatter(
+            x=spikes.index, y=spikes.values/1e3,
+            name='Spike anomaly', mode='markers',
+            marker=dict(symbol='triangle-up', size=12, color=GREEN,
+                       line=dict(color=BG, width=1)),
+            hovertemplate='SPIKE %{x|%b %y}<br>$%{y:.0f}K<extra></extra>'
+        ))
+    if len(drops):
+        fig.add_trace(go.Scatter(
+            x=drops.index, y=drops.values/1e3,
+            name='Drop anomaly', mode='markers',
+            marker=dict(symbol='triangle-down', size=12, color=RED,
+                       line=dict(color=BG, width=1)),
+            hovertemplate='DROP %{x|%b %y}<br>$%{y:.0f}K<extra></extra>'
+        ))
+    fig.update_layout(**PL, height=300,
+                      yaxis=dict(tickprefix='$', ticksuffix='K',
+                                 gridcolor=BORDER, zeroline=False,
+                                 griddash='dot', linecolor=BORDER),
+                      xaxis=dict(tickformat='%b %y', gridcolor=BORDER,
+                                 linecolor=BORDER, zeroline=False))
+    plotly_chart(fig)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # Anomaly table
+    st.markdown(f"<div class='cc'><div class='ct'>Anomaly Log</div>",
+                unsafe_allow_html=True)
+    adf = anom.reset_index()
+    adf.columns = ['Date', 'Sales']
+    adf['mo'] = pd.to_datetime(adf['Date']).dt.month
+    cause_map = {
+        11: 'Holiday season surge', 12: 'Christmas / year-end peak',
+        1: 'Post-holiday demand dip', 2: 'Post-holiday slowdown',
+        3: 'Promotional campaign activation', 6: 'Regional supply disruption',
+        7: 'Summer promotions', 8: 'Back-to-school demand',
+        9: 'End-of-quarter procurement surge'
+    }
+    adf['CAUSE'] = adf['mo'].map(cause_map).fillna('Unusual demand fluctuation')
+    adf['SIGNAL'] = adf['Sales'].apply(
+        lambda x: "<span class='bsp'>Spike</span>" if x > ws.mean()
+                  else "<span class='bdr'>Drop</span>")
+    adf['REVENUE'] = adf['Sales'].apply(lambda x: f"${x:,.0f}")
+    adf['DATE'] = pd.to_datetime(adf['Date']).dt.strftime('%b %d, %Y')
+    
+    rows = "".join(
+        f"<tr><td>{r['DATE']}</td><td style='color:{T1};font-weight:600;'>"
+        f"{r['REVENUE']}</td><td>{r['SIGNAL']}</td>"
+        f"<td style='font-family:monospace;'>{r['CAUSE']}</td></tr>"
+        for _, r in adf.sort_values('Date', ascending=False).iterrows()
+    )
+    st.markdown(f"""<table class='atbl'>
+        <thead><tr><th>Date</th><th>Revenue</th><th>Signal</th><th>Likely Cause</th></tr></thead>
+        <tbody>{rows}</tbody></table>""", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# ══════════════════════════════════════════════════════════════════════════
+#  PAGE 4 — SEGMENTS
+# ══════════════════════════════════════════════════════════════════════════
+elif page == 'segments':
+    st.markdown(f"""<div class='page-hdr'>
+        <h1>Demand Segments</h1>
+        <p>K-Means clustering · 4 behavioral segments identified</p>
+    </div>""", unsafe_allow_html=True)
+
+    # Feature engineering for clustering
+    feat = df.groupby('Sub-Category').agg(
+        Total_Sales=('Sales', 'sum'),
+        Avg_Order=('Sales', 'mean'),
+        Volatility=('Sales', 'std'),
+        Count=('Sales', 'count')
+    ).reset_index()
+    
+    yf = df.groupby(['Sub-Category', 'Year'])['Sales'].sum().unstack()
+    feat['Growth'] = yf.pct_change(axis=1).mean(axis=1).values
+    feat = feat.dropna()
+
+    # K-Means clustering
+    Xs = StandardScaler().fit_transform(
+        feat[['Total_Sales', 'Avg_Order', 'Volatility', 'Growth']])
+    km = KMeans(n_clusters=4, random_state=42, n_init=10)
+    feat['Cluster'] = km.fit_predict(Xs)
+    
+    # Segment labeling
+    sc = feat.groupby('Cluster')['Total_Sales'].mean().sort_values(ascending=False).index
+    lmp = {
+        sc[0]: 'High Volume Stable',
+        sc[1]: 'Growing Demand',
+        sc[2]: 'High Volatility',
+        sc[3]: 'Declining Demand'
+    }
+    feat['Segment'] = feat['Cluster'].map(lmp)
+
+    # PCA for visualization
+    pca = PCA(n_components=2)
+    Xp = pca.fit_transform(Xs)
+    xn = (Xp[:,0] - Xp[:,0].min()) / (Xp[:,0].max() - Xp[:,0].min()) * 100
+    yn = (Xp[:,1] - Xp[:,1].min()) / (Xp[:,1].max() - Xp[:,1].min()) * 100
+    feat['px'] = xn
+    feat['py'] = yn
+
+    SEG_COLORS = {
+        'High Volume Stable': BLUE,
+        'Growing Demand': GREEN,
+        'High Volatility': YELLOW,
+        'Declining Demand': RED
+    }
+    
+    SEG_STRATS = {
+        'High Volume Stable': ('Automate replenishment · maintain safety stock', BLUE),
+        'Growing Demand': ('Increase forecast buffer 15-20% · expand SKUs', GREEN),
+        'High Volatility': ('Safety stock ×2 · weekly demand sensing', YELLOW),
+        'Declining Demand': ('Reduce orders · markdown aging inventory', RED),
+    }
+
+    left, right = st.columns([3, 2])
+    
+    with left:
+        st.markdown(f"<div class='cc'><div class='ct'>PCA Cluster Projection</div>"
+                    f"<div class='cs'>K-Means k=4 · X-axis: sales volume · "
+                    f"Y-axis: demand stability</div>",
+                    unsafe_allow_html=True)
+        fig = go.Figure()
+        for seg, grp in feat.groupby('Segment'):
+            fig.add_trace(go.Scatter(
+                x=grp['px'], y=grp['py'],
+                mode='markers+text', name=seg,
+                text=grp['Sub-Category'],
+                textposition='top center',
+                textfont=dict(size=9, color=T2),
+                marker=dict(size=14, color=SEG_COLORS[seg],
+                           line=dict(color=PANEL, width=1.5)),
+                hovertemplate='<b>%{text}</b><br>'+seg+'<extra></extra>'
+            ))
+        fig.update_layout(**PL, height=450,
+            xaxis=dict(title='Sales Volume →', range=[-5, 105],
+                       tickvals=[0, 25, 50, 75, 100],
+                       gridcolor=BORDER, linecolor=BORDER, zeroline=False,
+                       showgrid=True),
+            yaxis=dict(title='Stability ↑', range=[-5, 105],
+                       tickvals=[0, 25, 50, 75, 100],
+                       gridcolor=BORDER, linecolor=BORDER, zeroline=False,
+                       showgrid=True),
+            legend=dict(orientation='h', yanchor='bottom', y=-0.2,
+                       xanchor='left', x=0, font=dict(size=10, color=T3)),
+            margin=dict(l=50, r=20, t=20, b=60))
+        plotly_chart(fig)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with right:
+        st.markdown("<br>", unsafe_allow_html=True)
+        for seg in ['High Volume Stable', 'Growing Demand',
+                    'High Volatility', 'Declining Demand']:
+            grp = feat[feat['Segment'] == seg]
+            items = ' · '.join(sorted(grp['Sub-Category'].tolist()))
+            color, strat = SEG_STRATS[seg]
+            dot = f"<span style='width:9px;height:9px;border-radius:50%;" \
+                  f"background:{color};display:inline-block;'></span>"
+            st.markdown(f"""
+            <div class='sc' style='border-left-color:{color};'>
+                <div class='sn'>{dot} {seg}</div>
+                <div class='si'>{items}</div>
+                <div class='ss' style='background:{color}18;color:{color};'>
+                    {strat}
+                </div>
+            </div>""", unsafe_allow_html=True)
+
+# Close content area div
+st.markdown("</div>", unsafe_allow_html=True)
