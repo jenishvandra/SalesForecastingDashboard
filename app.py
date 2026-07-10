@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import warnings
+from pathlib import Path
 warnings.filterwarnings('ignore')
 
 from prophet import Prophet
@@ -209,9 +210,20 @@ hr{{ border-color:#21262d!important; margin:10px 0!important; }}
 # ── DATA ──────────────────────────────────────────────────────────────────
 @st.cache_data
 def load_data():
-    df = pd.read_csv('train.csv')
-    df['Order Date'] = pd.to_datetime(df['Order Date'], dayfirst=True)
-    df['Ship Date']  = pd.to_datetime(df['Ship Date'],  dayfirst=True)
+    # app (1).py is in Downloads while train.csv is in the project folder.
+    candidates = [
+        Path(__file__).with_name('train.csv'),
+        Path(__file__).parent / 'week 3-4 project internship' / 'train.csv',
+    ]
+    csv_path = next((path for path in candidates if path.exists()), None)
+    if csv_path is None:
+        raise FileNotFoundError("train.csv was not found next to this file or in the project folder.")
+
+    df = pd.read_csv(csv_path)
+    df['Order Date'] = pd.to_datetime(df['Order Date'], dayfirst=True, errors='coerce')
+    df['Ship Date']  = pd.to_datetime(df['Ship Date'], dayfirst=True, errors='coerce')
+    df['Sales'] = pd.to_numeric(df['Sales'], errors='coerce')
+    df = df.dropna(subset=['Order Date', 'Sales']).copy()
     df['Year']     = df['Order Date'].dt.year
     df['Month']    = df['Order Date'].dt.month
     df['Quarter']  = df['Order Date'].dt.quarter
@@ -223,8 +235,10 @@ monthly  = df.groupby(pd.Grouper(key='Order Date',freq='ME'))['Sales'].sum().res
 monthly.columns = ['Date','Sales']
 weekly   = df.groupby(pd.Grouper(key='Order Date',freq='W'))['Sales'].sum().reset_index()
 weekly.columns  = ['Date','Sales']
-yr_rev   = df.groupby('Year')['Sales'].sum()
-yoy_pct  = (yr_rev.iloc[-1]-yr_rev.iloc[-2])/yr_rev.iloc[-2]*100
+yr_rev = df.groupby('Year')['Sales'].sum().sort_index()
+yoy_pct = 0.0
+if len(yr_rev) >= 2 and yr_rev.iloc[-2] != 0:
+    yoy_pct = (yr_rev.iloc[-1] - yr_rev.iloc[-2]) / yr_rev.iloc[-2] * 100
 
 # ── SESSION STATE for page ────────────────────────────────────────────────
 if 'page' not in st.session_state:
@@ -723,7 +737,7 @@ elif page == 'segments':
                     'High Volatility','Declining Demand']:
             grp   = feat[feat['Segment']==seg]
             items = ' · '.join(sorted(grp['Sub-Category'].tolist()))
-            color, strat = SEG_STRATS[seg]
+            strat, color = SEG_STRATS[seg]
             dot   = f"<span style='width:9px;height:9px;border-radius:50%;" \
                     f"background:{color};display:inline-block;'></span>"
             st.markdown(f"""
