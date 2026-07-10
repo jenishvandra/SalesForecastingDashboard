@@ -276,9 +276,9 @@ st.markdown(f"""
         <div class='qs-row'><span class='qs-label'>Revenue</span>
             <span class='qs-val'>${df['Sales'].sum()/1e6:.2f}M</span></div>
         <div class='qs-row'><span class='qs-label'>Orders</span>
-            <span class='qs-val'>{len(df):,}</span></div>
+            <span class='qs-val'>{df['Order ID'].nunique():,}</span></div>
         <div class='qs-row'><span class='qs-label'>YoY Growth</span>
-            <span class='qs-val' style='color:{GREEN};'>+{yoy_pct:.1f}%</span></div>
+            <span class='qs-val' style='color:{GREEN if yoy_pct >= 0 else RED};'>{yoy_pct:+.1f}%</span></div>
         <div class='qs-row'><span class='qs-label'>Avg Order</span>
             <span class='qs-val'>${df['Sales'].mean():,.0f}</span></div>
         <div class='qs-row' style='border:none;'><span class='qs-label'>Period</span>
@@ -340,13 +340,13 @@ if page == 'overview':
     c1,c2,c3,c4,c5 = st.columns(5)
     kpi_card(c1,"Total Revenue",   f"${df['Sales'].sum()/1e6:.2f}M",
              f"+{yoy_pct:.1f}% YoY","up","💲","#3D52A0")
-    kpi_card(c2,"Total Orders",    f"{len(df):,}",
+    kpi_card(c2,"Total Orders",    f"{df['Order ID'].nunique():,}",
              "+12.1% YoY","up","🛒","#3fb950")
     kpi_card(c3,"Avg Order Value", f"${df['Sales'].mean():,.0f}",
              "+3.8% YoY","up","📈","#a371f7")
     kpi_card(c4,"Avg Ship Time",   f"{df['Ship_Days'].mean():.1f} days",
              "-0.1% YoY","dn","⏱","#d29922")
-    kpi_card(c5,"Categories",      "3",
+    kpi_card(c5,"Categories",      f"{df['Category'].nunique()}",
              "Furn · Tech · Office","nu","🏷","#f85149")
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -537,10 +537,12 @@ elif page == 'forecast':
     k1,k2,k3,k4 = st.columns(4)
     kpi_card(k1,"MAE",      f"${mae/1e3:.1f}K",  "Mean Absolute Error","nu","📉","#3D52A0")
     kpi_card(k2,"RMSE",     f"${rmse/1e3:.1f}K", "Root Mean Sq. Error","nu","📈","#a371f7")
+    change_1 = (m1v - prev) / prev * 100 if prev else 0.0
+    change_last = (m3v - prev) / prev * 100 if prev else 0.0
     kpi_card(k3,"Month +1", f"${m1v/1e3:.0f}K",
-             f"+{(m1v-prev)/prev*100:.1f}% vs prior","up","↗","#3fb950")
-    kpi_card(k4,"Month +3", f"${m3v/1e3:.0f}K",
-             f"+{(m3v-prev)/prev*100:.1f}% vs current","up","📊","#d29922")
+             f"{change_1:+.1f}% vs prior","up" if change_1 >= 0 else "dn","↗","#3fb950")
+    kpi_card(k4,f"Month +{horizon}", f"${m3v/1e3:.0f}K",
+             f"{change_last:+.1f}% vs current","up" if change_last >= 0 else "dn","📊","#d29922")
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown(f"<div class='cc'><div class='ct'>Forecast Breakdown</div>",
