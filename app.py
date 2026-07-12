@@ -48,7 +48,9 @@ div[data-testid="stHorizontalBlock"]{gap:6px!important;}
 [class*="st-key-seg_hidden_row"]{position:absolute!important;width:1px!important;
     height:1px!important;overflow:hidden!important;padding:0!important;margin:0!important;
     border:0!important;clip:rect(0,0,0,0)!important;}
-[class*="st-key-horizon_row"]{max-width:260px!important;margin:6px 0 4px 32px!important;}
+[class*="st-key-horizon_hidden_row"]{position:absolute!important;width:1px!important;
+    height:1px!important;overflow:hidden!important;padding:0!important;margin:0!important;
+    border:0!important;clip:rect(0,0,0,0)!important;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -215,6 +217,7 @@ replacements = {
     "__M1V__":f'"${m1v/1e3:.0f}K"',"__M3V__":f'"${m3v/1e3:.0f}K"',
     "__M1PCT__":f'"+{(m1v-prev)/prev*100:.1f}% vs prior"',
     "__M3PCT__":f'"+{(m3v-prev)/prev*100:.1f}% vs current"',
+    "__HORIZON__":str(horizon),
 }
 for k,v in replacements.items(): html=html.replace(k,v)
 
@@ -244,6 +247,10 @@ if page=='forecast':
                     st.session_state.seg_choice=s; st.rerun()
 
     st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-    with st.container(key="horizon_row"):
-        hz = st.slider("Forecast Horizon (months)", 1, 3, horizon)
-    if hz!=horizon: st.session_state.horizon=hz; st.rerun()
+    with st.container(key="horizon_hidden_row"):
+        hcols = st.columns(3)
+        for col,h in zip(hcols,[1,2,3]):
+            with col:
+                if st.button(f"Horizon {h}", key=f'hzbtn_{h}', use_container_width=True,
+                             type='primary' if h==horizon else 'secondary'):
+                    st.session_state.horizon=h; st.rerun()
