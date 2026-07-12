@@ -127,8 +127,16 @@ body{background:#0d1117;color:#e6edf3;display:flex;min-height:100vh;}
     <p>Prophet model projections with confidence intervals</p></div>
 
   <div class="cc" style="padding:14px 18px;margin-bottom:14px;">
-    <div style="font-size:10px;color:#8b949e;text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:8px;">Segment Type</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;" id="seg-btns"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+      <div style="flex:1;min-width:220px;">
+        <div style="font-size:10px;color:#8b949e;text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:8px;">Segment Type</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="seg-btns"></div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:#8b949e;text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:8px;">Horizon (months)</div>
+        <div style="display:flex;gap:8px;" id="hz-btns"></div>
+      </div>
+    </div>
   </div>
 
   <div class="cc">
@@ -164,6 +172,7 @@ body{background:#0d1117;color:#e6edf3;display:flex;min-height:100vh;}
 <script>
 const HIST=__HIST__,FC=__FC__,FC_TBL=__FC_TBL__;
 const SEG_CHOICE=__SEG_CHOICE__;
+const HORIZON=__HORIZON__;
 const MAE=__MAE__,RMSE=__RMSE__,M1V=__M1V__,M3V=__M3V__;
 const M1PCT=__M1PCT__,M3PCT=__M3PCT__;
 
@@ -197,6 +206,19 @@ segs.forEach(s=>{
     :'background:#21262d;color:#8b949e;border:1px solid #30363d;');
   b.onclick=()=>nav('forecast',s);
   btnWrap.appendChild(b);
+});
+
+// Horizon buttons
+const hzWrap=document.getElementById('hz-btns');
+[1,2,3].forEach(h=>{
+  const b=document.createElement('button');
+  b.textContent=h+' mo';
+  b.style.cssText='padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;'+(
+    h===HORIZON
+    ?'background:#7091E6;color:white;border:1px solid #7091E6;'
+    :'background:#21262d;color:#8b949e;border:1px solid #30363d;');
+  b.onclick=()=>selectHorizon(h);
+  hzWrap.appendChild(b);
 });
 
 // Chart
@@ -253,5 +275,16 @@ function nav(p,seg){
       if(btns[i].innerText && btns[i].innerText.indexOf(target)!==-1){ btns[i].click(); return; }
     }
   }catch(e){ console.error("SalesIQ nav failed:",e); }
+}
+
+function selectHorizon(h){
+  try{
+    var doc=window.parent.document;
+    var target="Horizon "+h;
+    var btns=doc.querySelectorAll("button");
+    for(var i=0;i<btns.length;i++){
+      if(btns[i].innerText && btns[i].innerText.trim()===target){ btns[i].click(); return; }
+    }
+  }catch(e){ console.error("SalesIQ horizon select failed:",e); }
 }
 </script></body></html>
