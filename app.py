@@ -48,6 +48,7 @@ div[data-testid="stHorizontalBlock"]{gap:6px!important;}
 [class*="st-key-seg_hidden_row"]{position:absolute!important;width:1px!important;
     height:1px!important;overflow:hidden!important;padding:0!important;margin:0!important;
     border:0!important;clip:rect(0,0,0,0)!important;}
+[class*="st-key-horizon_row"]{max-width:260px!important;margin:6px 0 4px 32px!important;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -243,5 +244,6 @@ if page=='forecast':
                     st.session_state.seg_choice=s; st.rerun()
 
     st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-    hz = st.slider("Forecast Horizon (months)", 1, 3, horizon)
+    with st.container(key="horizon_row"):
+        hz = st.slider("Forecast Horizon (months)", 1, 3, horizon)
     if hz!=horizon: st.session_state.horizon=hz; st.rerun()
