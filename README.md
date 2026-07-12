@@ -6,7 +6,7 @@
 
 <img src="https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white">
 
-<img src="https://img.shields.io/badge/Machine%20Learning-Scikit--Learn-orange?style=for-the-badge">
+<img src="https://img.shields.io/badge/Scikit--Learn-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white">
 
 <img src="https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas">
 
@@ -16,132 +16,147 @@
 
 <img src="https://img.shields.io/github/forks/jenishvandra/SalesForecastingDashboard?style=for-the-badge">
 
+<img src="https://img.shields.io/github/license/jenishvandra/SalesForecastingDashboard?style=for-the-badge">
+
 </p>
 
 ---
 
 # 🚀 Live Demo
 
-👉 **https://jenish-sales-forecast.streamlit.app**
+### 🌐 https://jenish-sales-forecast.streamlit.app
 
 ---
 
 # 📌 Project Overview
 
-Sales Forecasting Dashboard is an interactive Machine Learning web application that helps businesses analyze historical sales data and predict future sales trends.
+The **Sales Forecasting Dashboard** is a Machine Learning-powered analytics platform developed using **Python**, **Streamlit**, and **Scikit-Learn** to help users analyze historical sales data, identify trends, detect anomalies, perform customer segmentation, and forecast future sales.
 
-The dashboard enables users to upload datasets, visualize sales performance, identify trends, explore KPIs, and generate intelligent forecasts through an easy-to-use interface built with Streamlit.
-
-Designed for business analysts, students, and data enthusiasts, this project demonstrates the practical use of data analytics and predictive modeling for real-world business decision-making.
+The dashboard combines business intelligence with predictive analytics through an intuitive interface that allows users to visualize insights and compare forecasting models in real time.
 
 ---
 
-# ✨ Features
+# ✨ Key Features
 
 ## 📊 Interactive Dashboard
 
-- Real-time analytics
-- KPI Cards
-- Business Insights
-- Dynamic Charts
-- Interactive Filters
+- Business KPI Overview
+- Sales Performance Analytics
+- Interactive Visualizations
+- Dynamic Dashboard
+- Responsive Design
 
 ---
 
-## 📈 Sales Forecasting
+## 📈 Time Series Analysis
 
+- Monthly Sales Trends
+- Seasonality Analysis
+- Time Series Decomposition
+- Stationarity Testing
+
+---
+
+## 🤖 Sales Forecasting
+
+- Prophet Forecasting
+- SARIMA Forecasting
+- XGBoost Prediction
+- Forecast Comparison
 - Future Sales Prediction
-- Trend Analysis
-- Historical Comparison
-- Forecast Visualization
-- Performance Analysis
 
 ---
 
-## 📂 Data Upload
+## 👥 Customer & Product Segmentation
 
-- Upload CSV Files
-- Instant Processing
-- Automatic Validation
+- K-Means Clustering
+- Segment Analysis
+- Elbow Method
+- Cluster Visualization
+
+---
+
+## 🚨 Anomaly Detection
+
+- Isolation Forest
+- Z-Score Detection
+- Sales Outlier Analysis
+- Anomaly Visualization
+
+---
+
+## 📉 Interactive Charts
+
+- Line Charts
+- Bar Charts
+- Scatter Plots
+- Forecast Graphs
+- Trend Analysis
+- Cluster Charts
+
+---
+
+## 📂 Dataset Support
+
+- CSV Dataset Import
+- Automatic Processing
+- Data Validation
 - Data Cleaning
 
 ---
 
-## 📉 Visualizations
-
-- Line Charts
-- Bar Charts
-- Pie Charts
-- Scatter Plot
-- Correlation Heatmap
-- Distribution Charts
-
----
-
-## 🤖 Machine Learning
-
-- Predict Future Sales
-- Regression Model
-- Performance Metrics
-- Error Analysis
-- Model Evaluation
-
----
-
-## 📱 Responsive UI
-
-- Desktop
-- Laptop
-- Tablet
-- Mobile
-
----
-
-# 🛠️ Tech Stack
+# 🛠 Tech Stack
 
 | Technology | Purpose |
-|------------|----------|
+|------------|-----------------------------|
 | Python | Programming Language |
-| Streamlit | Web Application |
+| Streamlit | Dashboard Development |
 | Pandas | Data Processing |
 | NumPy | Numerical Computing |
 | Plotly | Interactive Charts |
 | Matplotlib | Data Visualization |
 | Scikit-Learn | Machine Learning |
-| Joblib | Model Serialization |
+| Prophet | Time Series Forecasting |
+| XGBoost | Regression Forecasting |
+| Statsmodels | SARIMA Model |
 
 ---
 
 # 📂 Project Structure
 
-```
+```text
 SalesForecastingDashboard/
-
 │
-
+├── charts/
+│   ├── t1_seasonality.png
+│   ├── t2_decomposition.png
+│   ├── t3_prophet.png
+│   ├── t3_sarima.png
+│   ├── t3_xgboost.png
+│   ├── t4_segment_forecasts.png
+│   ├── t5_isolation_forest.png
+│   ├── t6_clusters.png
+│   └── ...
+│
+├── templates/
+│   ├── overview.html
+│   ├── forecast.html
+│   ├── anomaly.html
+│   ├── segments.html
+│   └── _base.css
+│
 ├── app.py
-
+├── analysis.ipynb
+├── train.csv
+├── vgsales.csv
+├── summary.pdf
 ├── requirements.txt
-
-├── dataset/
-
-├── model/
-
-├── utils/
-
-├── assets/
-
-│ ├── screenshots/
-
-│ └── images/
-
 └── README.md
-
 ```
 
 ---
 
-# ⚙️ Installation
+# ⚙ Installation
 
 ## Clone Repository
 
@@ -177,119 +192,102 @@ streamlit run app.py
 
 # 📊 Dashboard Modules
 
-✅ Overview Dashboard
-
-✅ Sales Analytics
-
-✅ Monthly Trends
-
-✅ Revenue Insights
-
-✅ Product Performance
-
-✅ Forecast Analysis
-
-✅ Interactive Charts
-
-✅ Business KPIs
+- 📈 Overview Dashboard
+- 📊 Sales Analytics
+- 📅 Time Series Analysis
+- 🤖 Sales Forecasting
+- 👥 Segmentation Analysis
+- 🚨 Anomaly Detection
+- 📉 Interactive Visualizations
 
 ---
 
-# 🎯 Machine Learning Workflow
+# 🤖 Machine Learning Models
 
-```
+| Model | Purpose |
+|--------|------------------------------|
+| Prophet | Time Series Forecasting |
+| SARIMA | Seasonal Sales Prediction |
+| XGBoost | Regression Forecasting |
+| Isolation Forest | Anomaly Detection |
+| K-Means | Customer/Product Segmentation |
+
+---
+
+# 🔄 Machine Learning Workflow
+
+```text
 Historical Sales Data
-        │
-        ▼
- Data Cleaning
-        │
-        ▼
- Feature Engineering
-        │
-        ▼
- Model Training
-        │
-        ▼
- Model Evaluation
-        │
-        ▼
- Sales Prediction
-        │
-        ▼
- Dashboard Visualization
+          │
+          ▼
+   Data Preprocessing
+          │
+          ▼
+ Exploratory Data Analysis
+          │
+          ▼
+   Time Series Analysis
+          │
+          ▼
+ Forecasting Models
+ ┌────────┼────────┐
+ ▼        ▼        ▼
+Prophet SARIMA XGBoost
+          │
+          ▼
+Segmentation Analysis
+          │
+          ▼
+Anomaly Detection
+          │
+          ▼
+Interactive Dashboard
 ```
 
 ---
 
-# 📈 Key Highlights
+# 🎯 Project Highlights
 
-- Interactive Dashboard
-
-- Real-time Data Analysis
-
-- Sales Forecasting
-
-- Beautiful Charts
-
+- Interactive Business Dashboard
 - Machine Learning Integration
-
-- User Friendly Interface
-
-- Responsive Design
-
-- Fast Performance
-
----
-
-# 💡 Future Improvements
-
-- Deep Learning Models
-
-- AI Recommendation Engine
-
-- PDF Report Export
-
-- Excel Report Export
-
-- User Authentication
-
-- Cloud Database
-
-- Email Alerts
-
-- Dark Mode
-
-- Multiple Forecast Models
-
-- Inventory Prediction
-
-- REST API
-
-- Docker Deployment
+- Multiple Forecasting Models
+- Time Series Analysis
+- Customer Segmentation
+- Sales Anomaly Detection
+- Business Insights
+- Responsive Interface
+- Clean UI Design
+- Real-Time Visualizations
 
 ---
 
 # 🎓 Learning Outcomes
 
-This project helped me gain practical experience in:
+This project helped strengthen my understanding of:
 
 - Machine Learning
-
-- Data Analysis
-
-- Predictive Analytics
-
-- Data Visualization
-
-- Dashboard Development
-
-- Python Programming
-
-- Streamlit Framework
-
+- Time Series Forecasting
 - Business Intelligence
-
+- Sales Analytics
+- Data Visualization
+- Customer Segmentation
+- Anomaly Detection
+- Python Development
+- Streamlit Framework
 - Git & GitHub
+
+---
+
+# 🚀 Future Improvements
+
+- Deep Learning Forecast Models
+- Dashboard Authentication
+- Cloud Deployment
+- Report Export (PDF & Excel)
+- Live Database Integration
+- Model Performance Dashboard
+- REST API Support
+- Automated Forecast Scheduling
 
 ---
 
@@ -297,43 +295,57 @@ This project helped me gain practical experience in:
 
 Contributions are welcome!
 
-1. Fork this repository
+### Fork Repository
 
-2. Create your feature branch
+```bash
+git fork
+```
+
+### Create Branch
 
 ```bash
 git checkout -b feature-name
 ```
 
-3. Commit your changes
+### Commit Changes
 
 ```bash
-git commit -m "Added new feature"
+git commit -m "Add new feature"
 ```
 
-4. Push your branch
+### Push Branch
 
 ```bash
 git push origin feature-name
 ```
 
-5. Create a Pull Request
+### Create Pull Request
 
 ---
 
-# ⭐ Show Your Support
+# ⭐ Support
 
-If you like this project,
+If you found this project helpful,
 
 ⭐ Star this repository
 
 🍴 Fork it
 
-📢 Share it
+📢 Share it with others
 
 ---
 
-GitHub
+# 👨‍💻 Developer
+
+## **Jeneesh Vandra**
+
+**Computer Science Engineering Student**
+
+Passionate about Machine Learning, Data Science, AI, and Full Stack Development.
+
+### Connect With Me
+
+**GitHub**
 
 https://github.com/jenishvandra
 
@@ -341,8 +353,14 @@ https://github.com/jenishvandra
 
 # 📜 License
 
-This project is licensed under the MIT License.
+This project is licensed under the **MIT License**.
 
 Feel free to use, modify, and contribute.
 
 ---
+
+<p align="center">
+
+⭐ If you like this project, don't forget to give it a Star ⭐
+
+</p>
