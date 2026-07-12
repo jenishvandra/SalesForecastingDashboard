@@ -46,9 +46,22 @@ div[data-testid="stHorizontalBlock"]{gap:6px!important;}
 """, unsafe_allow_html=True)
 
 # ── Session state ──────────────────────────────────────────────────────────
-if 'page'       not in st.session_state: st.session_state.page       = 'overview'
-if 'seg_choice' not in st.session_state: st.session_state.seg_choice = 'Technology'
-if 'horizon'    not in st.session_state: st.session_state.horizon    = 3
+qp = st.query_params
+valid_pages = {'overview','forecast','anomaly','segments'}
+valid_segs  = {'Technology','Furniture','Office Supplies','West','East'}
+
+if 'page' not in st.session_state:
+    st.session_state.page = qp.get('page') if qp.get('page') in valid_pages else 'overview'
+if 'seg_choice' not in st.session_state:
+    st.session_state.seg_choice = qp.get('seg') if qp.get('seg') in valid_segs else 'Technology'
+if 'horizon' not in st.session_state: st.session_state.horizon = 3
+
+# Keep the browser URL in sync with session state (so sidebar nav + reloads agree)
+st.query_params['page'] = st.session_state.page
+if st.session_state.page == 'forecast':
+    st.query_params['seg'] = st.session_state.seg_choice
+elif 'seg' in st.query_params:
+    del st.query_params['seg']
 
 # ── Data ───────────────────────────────────────────────────────────────────
 @st.cache_data
