@@ -18,12 +18,23 @@ st.set_page_config(page_title="SalesIQ", page_icon="📊",
 st.markdown("""
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-.stApp{background:#0d1117;}
-#MainMenu,footer,header{visibility:hidden;}
+html,body{margin:0!important;padding:0!important;overflow:hidden!important;height:100%!important;}
+.stApp{background:#0d1117;margin:0!important;padding:0!important;}
+#MainMenu,footer,header{visibility:hidden;display:none!important;}
+[data-testid="stHeader"]{display:none!important;height:0!important;}
+[data-testid="stToolbar"]{display:none!important;}
+[data-testid="stDecoration"]{display:none!important;}
 [data-testid="stSidebar"]{display:none!important;}
 [data-testid="collapsedControl"]{display:none!important;}
-.main .block-container{padding:0!important;max-width:100%!important;}
+[data-testid="stAppViewContainer"]{padding:0!important;margin:0!important;}
+[data-testid="stMain"]{padding:0!important;margin:0!important;}
+.main .block-container,[data-testid="stAppViewBlockContainer"],
+[data-testid="stMainBlockContainer"]{
+    padding:0!important;margin:0!important;max-width:100%!important;}
 section.main>div{padding:0!important;}
+[data-testid="stVerticalBlock"]{gap:0!important;}
+[data-testid="element-container"],.element-container{margin:0!important;padding:0!important;}
+iframe{border:none!important;display:block!important;width:100%!important;}
 .stButton>button{
     background:#21262d!important;border:1px solid #30363d!important;
     color:#c9d1d9!important;border-radius:6px!important;
