@@ -6,7 +6,7 @@ import json, os
 import warnings
 warnings.filterwarnings('ignore')
 
-from prophet import Prophet
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 from sklearn.ensemble import IsolationForest
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
@@ -134,7 +134,7 @@ clust_json=json.dumps([{"name":r['Sub-Category'],"x":round(float(r['px']),1),"y"
 seg_cards={seg:sorted(feat[feat['Segment']==seg]['Sub-Category'].tolist())
            for seg in ['High Volume Stable','Growing Demand','High Volatility','Declining Demand']}
 
-# ── Prophet forecast ───────────────────────────────────────────────────────
+# ── SARIMA forecast (pure statsmodels — no compiled Stan binary, safe on any Python) ──
 seg_choice = st.session_state.seg_choice
 horizon    = st.session_state.horizon
 
@@ -144,11 +144,22 @@ def run_prophet(seg, hz):
           else df[df['Region']==seg]
     sm  = sdf.groupby(pd.Grouper(key='Order Date',freq='ME'))['Sales'].sum().reset_index()
     sm.columns=['ds','y']
-    m   = Prophet(yearly_seasonality=True,weekly_seasonality=False,
-                  daily_seasonality=False,seasonality_mode='additive')
-    m.fit(sm)
-    fut = m.make_future_dataframe(periods=hz,freq='ME')
-    fc  = m.predict(fut)
+
+    model = SARIMAX(sm['y'].values, order=(1,1,1), seasonal_order=(1,1,0,12),
+                     enforce_stationarity=False, enforce_invertibility=False)
+    fit = model.fit(disp=False)
+
+    fitted_vals = fit.fittedvalues
+    fc_res      = fit.get_forecast(steps=hz)
+    future_mean = np.asarray(fc_res.predicted_mean)
+    conf        = np.asarray(fc_res.conf_int(alpha=0.05))
+    future_dates= pd.date_range(start=sm['ds'].iloc[-1], periods=hz+1, freq='ME')[1:]
+
+    hist_df = pd.DataFrame({"ds":sm['ds'], "yhat":fitted_vals,
+                             "yhat_lower":fitted_vals, "yhat_upper":fitted_vals})
+    fut_df  = pd.DataFrame({"ds":future_dates, "yhat":future_mean,
+                             "yhat_lower":conf[:,0], "yhat_upper":conf[:,1]})
+    fc = pd.concat([hist_df, fut_df], ignore_index=True)
     return sm, fc
 
 seg_m, fc = run_prophet(seg_choice, horizon)
