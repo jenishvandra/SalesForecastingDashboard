@@ -1,0 +1,269 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+*{font-family:'Inter',sans-serif;box-sizing:border-box;margin:0;padding:0;}
+body{background:#0d1117;color:#e6edf3;display:flex;min-height:100vh;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:#0d1117;}
+::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px;}
+
+/* Sidebar */
+.sidebar{width:210px;min-width:210px;background:#161b22;
+  border-right:1px solid #30363d;display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;overflow-y:auto;}
+.brand{padding:20px 16px 16px;border-bottom:1px solid #30363d;}
+.brand-name{font-size:20px;font-weight:800;color:#e6edf3;letter-spacing:-.5px;}
+.brand-name span{color:#7091E6;}
+.brand-sub{font-size:10px;color:#8b949e;margin-top:2px;}
+.nav-sec{font-size:10px;color:#8b949e;text-transform:uppercase;
+  letter-spacing:1px;font-weight:600;padding:12px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;
+  font-size:13px;font-weight:500;color:#8b949e;cursor:pointer;
+  border-right:2px solid transparent;transition:all .15s;text-decoration:none;}
+.nav-item:hover{background:#21262d;color:#e6edf3;}
+.nav-item.active{background:#21262d;color:#7091E6;border-right-color:#7091E6;}
+.nav-icon{font-size:14px;width:18px;text-align:center;}
+.qs-wrap{padding:12px 16px;border-top:1px solid #30363d;margin-top:auto;}
+.qs-title{font-size:10px;color:#8b949e;text-transform:uppercase;
+  letter-spacing:1px;font-weight:600;margin-bottom:10px;}
+.qs-row{display:flex;justify-content:space-between;padding:5px 0;
+  border-bottom:1px solid #21262d;font-size:11px;}
+.qs-row:last-child{border:none;}
+.qs-lbl{color:#8b949e;}
+.qs-val{font-weight:700;color:#c9d1d9;}
+.qs-green{color:#3fb950!important;}
+.live{display:flex;align-items:center;gap:6px;padding:10px 16px;
+  font-size:11px;color:#3fb950;font-weight:500;border-top:1px solid #30363d;}
+.ldot{width:7px;height:7px;border-radius:50%;background:#3fb950;
+  animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Content */
+.content{flex:1;padding:28px 32px;overflow-y:auto;max-height:100vh;}
+.ph{margin-bottom:22px;padding-bottom:14px;border-bottom:1px solid #21262d;}
+.ph h1{font-size:1.6rem;font-weight:700;color:#e6edf3;letter-spacing:-.3px;}
+.ph p{font-size:12px;color:#8b949e;font-family:monospace;margin-top:4px;}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+.kpi{background:#161b22;border:1px solid #30363d;border-radius:10px;
+  padding:16px 18px;position:relative;overflow:hidden;transition:border-color .2s;}
+.kpi:hover{border-color:#3D52A0;}
+.kpi-icon{position:absolute;top:14px;right:14px;width:28px;height:28px;
+  border-radius:6px;display:flex;align-items:center;
+  justify-content:center;font-size:14px;}
+.kpi-lbl{font-size:10px;color:#8b949e;text-transform:uppercase;
+  letter-spacing:.8px;font-weight:600;margin-bottom:8px;}
+.kpi-val{font-size:26px;font-weight:800;color:#e6edf3;
+  letter-spacing:-.5px;margin-bottom:5px;}
+.kpi-dl{font-size:11px;font-weight:500;}
+.up{color:#3fb950;}.dn{color:#f85149;}.nu{color:#8b949e;}
+
+/* Cards */
+.cc{background:#161b22;border:1px solid #30363d;border-radius:10px;
+  padding:18px 20px;margin-bottom:14px;}
+.ct{font-size:14px;font-weight:600;color:#e6edf3;margin-bottom:2px;}
+.cs{font-size:11px;color:#8b949e;font-family:monospace;margin-bottom:14px;}
+
+/* Grid helpers */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+
+/* Segment cards */
+.sc{background:#161b22;border:1px solid #30363d;border-left:3px solid;
+  border-radius:8px;padding:14px 16px;margin-bottom:10px;}
+.sn{font-size:13px;font-weight:700;color:#e6edf3;margin-bottom:6px;
+  display:flex;align-items:center;gap:8px;}
+.sdot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+.si{font-size:11px;color:#8b949e;margin-bottom:8px;line-height:1.6;}
+.ss{font-size:11px;font-weight:500;padding:5px 10px;border-radius:4px;
+  font-family:monospace;display:inline-block;}
+
+/* Anomaly table */
+.atbl{width:100%;border-collapse:collapse;}
+.atbl th{text-align:left;padding:8px 12px;font-size:10px;color:#8b949e;
+  text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid #30363d;}
+.atbl td{padding:8px 12px;border-bottom:1px solid #21262d;font-size:12px;color:#c9d1d9;}
+.atbl tr:hover td{background:#21262d;}
+.bsp{background:rgba(63,185,80,.15);color:#3fb950;border:1px solid rgba(63,185,80,.3);
+  border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;}
+.bdr{background:rgba(248,81,73,.15);color:#f85149;border:1px solid rgba(248,81,73,.3);
+  border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;}
+
+/* Forecast table */
+.ftbl{width:100%;border-collapse:collapse;margin-top:8px;}
+.ftbl th{text-align:left;padding:8px 12px;font-size:10px;color:#8b949e;
+  text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid #30363d;}
+.ftbl td{padding:10px 12px;border-bottom:1px solid #21262d;font-size:13px;}
+.ftbl td:first-child{color:#c9d1d9;}
+.ftbl td:nth-child(2){color:#7091E6;font-weight:700;}
+.ftbl td:nth-child(3),.ftbl td:nth-child(4){color:#8b949e;}
+canvas{max-height:260px!important;}
+.toggle{display:flex;gap:8px;margin-bottom:14px;}
+.tog-btn{padding:6px 16px;border-radius:6px;cursor:pointer;font-size:12px;
+  border:1px solid #30363d;transition:all .15s;}
+.tog-btn.active{background:#7091E6;color:white;border-color:#7091E6;}
+.tog-btn:not(.active){background:#21262d;color:#8b949e;}
+</style></head><body>
+
+<div class="sidebar">
+  <div class="brand"><div class="brand-name">Sales<span>IQ</span></div>
+    <div class="brand-sub">Analytics Platform</div></div>
+  <div class="nav-sec">Navigation</div>
+  <a class="nav-item" href="#" onclick="nav('overview')"><span class="nav-icon">📊</span>Sales Overview</a>
+  <a class="nav-item" href="#" onclick="nav('forecast')"><span class="nav-icon">📈</span>Forecasting</a>
+  <a class="nav-item active"><span class="nav-icon">🔔</span>Anomaly Report</a>
+  <a class="nav-item" href="#" onclick="nav('segments')"><span class="nav-icon">🗂</span>Demand Segments</a>
+  <div class="qs-wrap">
+    <div class="qs-title">Quick Stats</div>
+    <div class="qs-row"><span class="qs-lbl">Isolation Forest</span><span class="qs-val" id="qs-iso"></span></div>
+    <div class="qs-row"><span class="qs-lbl">Z-Score</span><span class="qs-val" id="qs-z"></span></div>
+    <div class="qs-row"><span class="qs-lbl">Consensus</span><span class="qs-val qs-green" id="qs-b"></span></div>
+    <div class="qs-row"><span class="qs-lbl">Weeks</span><span class="qs-val" id="qs-w"></span></div>
+  </div>
+  <div class="live"><div class="ldot"></div>LIVE · Updated just now</div>
+</div>
+
+<div class="content">
+  <div class="ph"><h1>Anomaly Report</h1>
+    <p>Isolation Forest + Z-Score detection on weekly sales data</p></div>
+
+  <div class="g4" style="margin-bottom:16px;">
+    <div class="kpi"><div class="kpi-icon" style="background:#d2992220">⚠</div>
+      <div class="kpi-lbl">Isolation Forest</div>
+      <div class="kpi-val" id="k-iso"></div>
+      <div class="kpi-dl dn">Anomalies Detected</div></div>
+    <div class="kpi"><div class="kpi-icon" style="background:#f8514920">📉</div>
+      <div class="kpi-lbl">Z-Score Anomalies</div>
+      <div class="kpi-val" id="k-z"></div>
+      <div class="kpi-dl dn">Anomalies Detected</div></div>
+    <div class="kpi"><div class="kpi-icon" style="background:#a371f720">⚡</div>
+      <div class="kpi-lbl">Consensus Flags</div>
+      <div class="kpi-val" id="k-both"></div>
+      <div class="kpi-dl up">Both Methods Agree</div></div>
+    <div class="kpi"><div class="kpi-icon" style="background:#3D52A020">📊</div>
+      <div class="kpi-lbl">Weeks Analyzed</div>
+      <div class="kpi-val" id="k-wks"></div>
+      <div class="kpi-dl nu">Full Dataset</div></div>
+  </div>
+
+  <div class="cc">
+    <div class="ct">Weekly Sales — Anomaly Detection</div>
+    <div class="cs" id="chart-sub">Isolation Forest model · 4-week rolling average overlay</div>
+    <div class="toggle">
+      <button class="tog-btn active" id="btn-iso" onclick="switchMethod('iso')">Isolation Forest</button>
+      <button class="tog-btn" id="btn-z" onclick="switchMethod('z')">Z-Score</button>
+    </div>
+    <canvas id="anomChart"></canvas>
+  </div>
+
+  <div class="cc">
+    <div class="ct">Anomaly Log</div>
+    <table class="atbl">
+      <thead><tr><th>Date</th><th>Revenue</th><th>Signal</th><th>Likely Cause</th></tr></thead>
+      <tbody id="anom-tbl"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const ISO_AN=__ISO_ANOM__,Z_AN=__Z_ANOM__,WS=__WS__,RM4=__RM4__;
+const ISO_CT=__ISO_CT__,Z_CT=__Z_CT__,BOTH_CT=__BOTH_CT__,WEEKS_CT=__WEEKS_CT__;
+const ISO_TBL=__ISO_TBL__,Z_TBL=__Z_TBL__;
+
+const PANEL='#161b22',BORDER='#30363d',T2='#c9d1d9',T3='#8b949e';
+const BLUE='#7091E6',GREEN='#3fb950',RED='#f85149',YELLOW='#d29922';
+
+document.getElementById('k-iso').textContent=ISO_CT+' flags';
+document.getElementById('k-z').textContent=Z_CT+' flags';
+document.getElementById('k-both').textContent=BOTH_CT+' flags';
+document.getElementById('k-wks').textContent=WEEKS_CT;
+document.getElementById('qs-iso').textContent=ISO_CT+' flags';
+document.getElementById('qs-z').textContent=Z_CT+' flags';
+document.getElementById('qs-b').textContent=BOTH_CT+' flags';
+document.getElementById('qs-w').textContent=WEEKS_CT;
+
+const base={responsive:true,
+  plugins:{legend:{labels:{color:T3,font:{size:10}}},
+    tooltip:{backgroundColor:PANEL,borderColor:BORDER,borderWidth:1,
+      titleColor:'#e6edf3',bodyColor:T2}},
+  scales:{x:{grid:{color:BORDER},ticks:{color:T3,font:{size:9},maxTicksLimit:14}},
+    y:{grid:{color:BORDER,borderDash:[3,3]},
+      ticks:{color:T3,font:{size:9},callback:v=>'$'+v+'K'}}}};
+
+const wsLabels=WS.map(d=>d.x.slice(0,10));
+const wsData  =WS.map(d=>d.y);
+const rm4Data =RM4.map(d=>d.y);
+
+let chart=null;
+
+function buildChart(anomData){
+  if(chart) chart.destroy();
+  const spikes=anomData.filter(d=>d.type==='spike');
+  const drops =anomData.filter(d=>d.type==='drop');
+
+  const spikeMap={},dropMap={};
+  spikes.forEach(d=>spikeMap[d.x.slice(0,10)]=d.y);
+  drops.forEach(d=>dropMap[d.x.slice(0,10)]=d.y);
+
+  const spikeData=wsLabels.map(l=>spikeMap[l]||null);
+  const dropData =wsLabels.map(l=>dropMap[l]||null);
+
+  chart=new Chart(document.getElementById('anomChart'),{type:'line',
+    data:{labels:wsLabels,datasets:[
+      {label:'Weekly Revenue',data:wsData,borderColor:BLUE,borderWidth:1.5,
+       pointRadius:0,fill:true,backgroundColor:'rgba(112,145,230,0.06)',tension:.3},
+      {label:'4-wk Rolling Avg',data:rm4Data,borderColor:YELLOW,borderWidth:1.2,
+       borderDash:[5,3],pointRadius:0,fill:false,tension:.3},
+      {label:'Spike anomaly',data:spikeData,borderColor:'transparent',
+       pointRadius:wsLabels.map(l=>spikeMap[l]?10:0),
+       pointBackgroundColor:GREEN,pointStyle:'triangle',fill:false,
+       showLine:false},
+      {label:'Drop anomaly',data:dropData,borderColor:'transparent',
+       pointRadius:wsLabels.map(l=>dropMap[l]?10:0),
+       pointBackgroundColor:RED,pointStyle:'triangle',rotation:180,fill:false,
+       showLine:false}
+    ]},options:base});
+}
+
+function fillTable(tbl){
+  const tbody=document.getElementById('anom-tbl');
+  tbody.innerHTML='';
+  [...tbl].sort((a,b)=>b.date.localeCompare(a.date)).forEach(r=>{
+    const badge=r.sig==='spike'?"<span class='bsp'>Spike</span>":"<span class='bdr'>Drop</span>";
+    tbody.innerHTML+=`<tr><td>${r.date}</td><td style="color:#e6edf3;font-weight:600;">${r.rev}</td><td>${badge}</td><td style="font-family:monospace;">${r.cause}</td></tr>`;
+  });
+}
+
+let mode='iso';
+buildChart(ISO_AN);
+fillTable(ISO_TBL);
+
+function switchMethod(m){
+  mode=m;
+  document.getElementById('btn-iso').className='tog-btn'+(m==='iso'?' active':'');
+  document.getElementById('btn-z').className='tog-btn'+(m==='z'?' active':'');
+  document.getElementById('chart-sub').textContent=
+    (m==='iso'?'Isolation Forest':'Z-Score')+' model · 4-week rolling average overlay';
+  buildChart(m==='iso'?ISO_AN:Z_AN);
+  fillTable(m==='iso'?ISO_TBL:Z_TBL);
+}
+
+function nav(p,seg){
+  try{
+    var doc=window.parent.document;
+    var labelMap={overview:"Overview",forecast:"Forecasting",anomaly:"Anomalies",segments:"Segments"};
+    var btns=doc.querySelectorAll("button");
+    if(seg){
+      for(var i=0;i<btns.length;i++){
+        if(btns[i].innerText && btns[i].innerText.trim()===seg){ btns[i].click(); return; }
+      }
+    }
+    var target=labelMap[p];
+    for(var i=0;i<btns.length;i++){
+      if(btns[i].innerText && btns[i].innerText.indexOf(target)!==-1){ btns[i].click(); return; }
+    }
+  }catch(e){ console.error("SalesIQ nav failed:",e); }
+}
+</script></body></html>
