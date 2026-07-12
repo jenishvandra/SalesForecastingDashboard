@@ -46,22 +46,9 @@ div[data-testid="stHorizontalBlock"]{gap:6px!important;}
 """, unsafe_allow_html=True)
 
 # ── Session state ──────────────────────────────────────────────────────────
-qp = st.query_params
-valid_pages = {'overview','forecast','anomaly','segments'}
-valid_segs  = {'Technology','Furniture','Office Supplies','West','East'}
-
-if 'page' not in st.session_state:
-    st.session_state.page = qp.get('page') if qp.get('page') in valid_pages else 'overview'
-if 'seg_choice' not in st.session_state:
-    st.session_state.seg_choice = qp.get('seg') if qp.get('seg') in valid_segs else 'Technology'
-if 'horizon' not in st.session_state: st.session_state.horizon = 3
-
-# Keep the browser URL in sync with session state (so sidebar nav + reloads agree)
-st.query_params['page'] = st.session_state.page
-if st.session_state.page == 'forecast':
-    st.query_params['seg'] = st.session_state.seg_choice
-elif 'seg' in st.query_params:
-    del st.query_params['seg']
+if 'page'       not in st.session_state: st.session_state.page       = 'overview'
+if 'seg_choice' not in st.session_state: st.session_state.seg_choice = 'Technology'
+if 'horizon'    not in st.session_state: st.session_state.horizon    = 3
 
 # ── Data ───────────────────────────────────────────────────────────────────
 @st.cache_data
@@ -233,9 +220,12 @@ if page=='forecast':
     fc1,fc2 = st.columns([4,1])
     with fc1:
         segs=["Technology","Furniture","Office Supplies","West","East"]
-        sc2 = st.radio("Segment",segs,horizontal=True,
-                       index=segs.index(seg_choice),label_visibility='collapsed')
-        if sc2!=seg_choice: st.session_state.seg_choice=sc2; st.rerun()
+        seg_cols = st.columns(len(segs))
+        for col,s in zip(seg_cols, segs):
+            with col:
+                if st.button(s, key=f'segbtn_{s}', use_container_width=True,
+                             type='primary' if s==seg_choice else 'secondary'):
+                    st.session_state.seg_choice=s; st.rerun()
     with fc2:
         hz = st.slider("Horizon",1,3,horizon,label_visibility='collapsed')
         if hz!=horizon: st.session_state.horizon=hz; st.rerun()
