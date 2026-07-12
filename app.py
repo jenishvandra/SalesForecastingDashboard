@@ -42,6 +42,12 @@ section.main>div{padding:0!important;}
 .stRadio input{display:none!important;}
 .stSlider>div>div>div{background:#7091E6!important;}
 div[data-testid="stHorizontalBlock"]{gap:6px!important;}
+[class*="st-key-nav_hidden_row"]{position:absolute!important;width:1px!important;
+    height:1px!important;overflow:hidden!important;padding:0!important;margin:0!important;
+    border:0!important;clip:rect(0,0,0,0)!important;}
+[class*="st-key-seg_hidden_row"]{position:absolute!important;width:1px!important;
+    height:1px!important;overflow:hidden!important;padding:0!important;margin:0!important;
+    border:0!important;clip:rect(0,0,0,0)!important;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -214,22 +220,20 @@ for k,v in replacements.items(): html=html.replace(k,v)
 # ── Render HTML ────────────────────────────────────────────────────────────
 components.html(html, height=920, scrolling=True)
 
-# ── Navigation buttons ─────────────────────────────────────────────────────
-st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-c1,c2,c3,c4 = st.columns(4)
-pages = [('overview','📊 Overview'),('forecast','📈 Forecasting'),
-         ('anomaly','🔔 Anomalies'),('segments','🗂 Segments')]
-for col,(pg,lbl) in zip([c1,c2,c3,c4], pages):
-    with col:
-        if st.button(lbl, key=f'nav_{pg}', use_container_width=True,
-                     type='primary' if page==pg else 'secondary'):
-            st.session_state.page=pg; st.rerun()
+# ── Navigation buttons (hidden helpers — sidebar clicks trigger these via JS) ──
+with st.container(key="nav_hidden_row"):
+    c1,c2,c3,c4 = st.columns(4)
+    pages = [('overview','📊 Overview'),('forecast','📈 Forecasting'),
+             ('anomaly','🔔 Anomalies'),('segments','🗂 Segments')]
+    for col,(pg,lbl) in zip([c1,c2,c3,c4], pages):
+        with col:
+            if st.button(lbl, key=f'nav_{pg}', use_container_width=True,
+                         type='primary' if page==pg else 'secondary'):
+                st.session_state.page=pg; st.rerun()
 
 # ── Forecast controls ──────────────────────────────────────────────────────
 if page=='forecast':
-    st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
-    fc1,fc2 = st.columns([4,1])
-    with fc1:
+    with st.container(key="seg_hidden_row"):
         segs=["Technology","Furniture","Office Supplies","West","East"]
         seg_cols = st.columns(len(segs))
         for col,s in zip(seg_cols, segs):
@@ -237,6 +241,7 @@ if page=='forecast':
                 if st.button(s, key=f'segbtn_{s}', use_container_width=True,
                              type='primary' if s==seg_choice else 'secondary'):
                     st.session_state.seg_choice=s; st.rerun()
-    with fc2:
-        hz = st.slider("Horizon",1,3,horizon,label_visibility='collapsed')
-        if hz!=horizon: st.session_state.horizon=hz; st.rerun()
+
+    st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+    hz = st.slider("Forecast Horizon (months)", 1, 3, horizon)
+    if hz!=horizon: st.session_state.horizon=hz; st.rerun()
