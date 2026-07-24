@@ -84,8 +84,7 @@ streamlit run app.py
 ---
 
 ## 🎬 See It In Action
-
-![Sales Forecasting Dashboard Demo](https://via.placeholder.com/800x400/1a1a2e/ffffff?text=Sales+Forecasting+Dashboard+Demo)
+<img width="1919" height="752" alt="image" src="https://github.com/user-attachments/assets/bda86173-e14c-49a8-9336-6336a5d6076c" />
 
 *Upload your CSV and get forecasts in seconds - no code needed!*
 
